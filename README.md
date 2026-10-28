@@ -88,7 +88,7 @@ Sablier est gratuit. S'il vous rend service, une ⭐ sur ce dépôt aide d'autre
 - **Schedules**: turn the PC off or wake it up at a set time, once or on chosen days.
 - **Scheduled wake-up**: the PC wakes from sleep or hibernation on its own and stays on until you're back.
 - **Always 60 seconds to cancel** before any shutdown (Cancel, +15 min, Now).
-- **Smart with wake-ups**: while a wake-up is scheduled, the power button, the "Shut down PC" shortcut, scheduled shutdowns and "Shut down" timers hibernate instead of shutting down, so the PC can wake up again. Otherwise they shut down normally.
+- **Adapts to wake-ups**: while a wake-up is scheduled, the power button, the "Shut down PC" shortcut, scheduled shutdowns and "Shut down" timers hibernate instead of shutting down, so the PC can wake up again. Otherwise they shut down normally.
 - **Lightweight**: nothing runs in the background (each schedule is a Windows Task Scheduler task); no data collected, no internet connection.
 
 <p align="center">

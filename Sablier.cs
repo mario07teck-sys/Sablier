@@ -847,7 +847,7 @@ class Fenetre
         F<TextBlock>("GuideTitre").Text = Ui.T("Allumage prévu ", "Wake-up scheduled ") + Ui.Quand(p.Cible);
         string texte = Ui.T(
             "Pour que le PC se rallume tout seul, il doit être en veille prolongée, pas éteint.\n\n• Éteignez avec « Éteindre » dans Sablier (ou son raccourci « Éteindre le PC ») ou avec le bouton d'alimentation du PC.\n• Les arrêts programmés et minuteries « Arrêt » passent eux aussi en veille prolongée.\n• Évitez Démarrer › Arrêter : l'allumage n'aurait pas lieu.\n\nAu réveil, le PC reste allumé jusqu'à votre retour (2 h max).",
-            "To wake up on its own, the PC must be hibernating, not shut down.\n\n• Turn off with \"Turn off\" in Sablier (or its \"Shut down PC\" shortcut) or with the PC's power button.\n• Scheduled shutdowns and shut-down timers hibernate too.\n• Avoid Start › Shut down: the wake-up would not happen.\n\nOnce woken, the PC stays on until you're back (2 h max).");
+            "To wake up on its own, the PC must be hibernating, not shut down.\n\n• Use Sablier's \"Turn off\" button (or its \"Shut down PC\" shortcut) or the PC's power button.\n• Scheduled shutdowns and shut-down timers hibernate too.\n• Avoid Start › Shut down: the wake-up would not happen.\n\nOnce it wakes up, the PC stays on until you're back (2 h max).");
         if (p.Repeter) texte = Ui.T("Allumage récurrent : " + Ui.Jours(p.Jours) + ".\n\n", "Recurring wake-up: " + Ui.Jours(p.Jours) + ".\n\n") + texte;
         F<TextBlock>("GuideTexte").Text = texte;
     }
