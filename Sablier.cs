@@ -1,6 +1,6 @@
 // Sablier : minuterie d'extinction et allumage programmé pour Windows.
 // WPF sur .NET Framework 4.8 (présent sur tout Windows 10/11), compilé par build.ps1 avec le csc.exe de Windows (C# 5).
-// Chaque programme est une tâche du Planificateur Windows (dossier \Sablier) : rien ne tourne en arrière-plan.
+// Chaque programme est une tâche du Planificateur Windows (dossier \Sablier) : l'extinction a lieu même Sablier fermé ; l'icône de la zone de notification ne sert qu'à le rouvrir.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,9 +26,21 @@ using Microsoft.Win32;
 using System.Text.RegularExpressions;
 using System.Windows.Automation.Peers;
 using IO = System.IO;
+using Forms = System.Windows.Forms;
 
 static class Program
 {
+    // Un programme actif est prévu plus tard (sinon --sync ne fait rien)
+    static bool Programmee()
+    {
+        try
+        {
+            foreach (Prog p in Planif.Liste()) if (p.Actif && p.Prochain > DateTime.Now) return true;
+        }
+        catch (Exception) { }
+        return false;
+    }
+
     [STAThread]
     static int Main(string[] args)
     {
@@ -37,7 +49,12 @@ static class Program
         if (mode == "--selftest") return SelfTest.Run();
         if (mode == "--uninstall") { Setup.Desinstaller(args.Length > 1 && args[1] == "--quiet"); return 0; }
         if (mode == "--silent") return Setup.Silencieux(); // installation sans fenêtre (winget)
-        if (mode == "--sync") { Power.Synchroniser(); return 0; } // à l'ouverture de session (clé Run)
+        if (mode == "--sync") // à l'ouverture de session (clé Run) : ne reste dans la zone de notification que si quelque chose est prévu
+        {
+            Power.Synchroniser();
+            if (!Setup.Installe || !Programmee()) return 0;
+            mode = "--tray";
+        }
 
         var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
         app.Resources = Ui.Load<ResourceDictionary>("Theme.xaml");
@@ -49,12 +66,19 @@ static class Program
         else if (!Setup.Installe) w = new Setup().W; // lancé hors de son dossier : c'est l'installeur
         else
         {
+            // Une seule instance : une deuxième ouverture réaffiche la première (rien à montrer en --tray / --sync)
+            bool nouveau;
+            var signal = new EventWaitHandle(false, EventResetMode.AutoReset, "Sablier-Afficher", out nouveau);
+            if (!nouveau) { if (mode != "--tray") signal.Set(); return 0; }
+            app.ShutdownMode = ShutdownMode.OnExplicitShutdown; // Sablier ne se ferme que par Quitter()
             // Clic droit sur Sablier épinglé à la barre des tâches → « Éteindre le PC »
             var jl = new JumpList();
             jl.JumpItems.Add(new JumpTask { Title = Ui.T("Éteindre le PC", "Shut down PC"), Description = Ui.T("Hibernation si un allumage est prévu, sinon arrêt", "Hibernates if a wake-up is scheduled, otherwise shuts down"), Arguments = "--off", IconResourcePath = Planif.Exe });
             JumpList.SetJumpList(app, jl);
             jl.Apply();
-            w = new Fenetre().W;
+            var fen = new Fenetre(mode == "--tray", signal);
+            if (mode == "--tray") { app.Run(); return 0; } // démarre caché dans la zone de notification
+            w = fen.W;
         }
         return app.Run(w);
     }
@@ -353,7 +377,6 @@ static class Ui
     public static readonly bool En = (Environment.GetEnvironmentVariable("SABLIER_LANG") ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName) != "fr";
     public static string T(string fr, string en) { return En ? en : fr; }
 
-    public static readonly string Pc = Environment.MachineName.StartsWith("DESKTOP-", StringComparison.OrdinalIgnoreCase) ? Environment.UserName : Environment.MachineName;
     static readonly bool Master = (Environment.MachineName + Environment.UserName).ToUpperInvariant().Contains("MASTER");
     static readonly string A1 = Master ? "F43F5E" : "22D3EE", A2 = Master ? "FB923C" : "A78BFA";
     public static readonly CultureInfo Culture = new CultureInfo(En ? "en-GB" : "fr-FR");
@@ -556,14 +579,18 @@ class Fenetre
     readonly TextBox hh, mm;
     readonly FrameworkElement heroActions, snack;
     readonly UIElement btnAnnuler, btnPlus15, btnEteindre;
+    readonly Forms.NotifyIcon tray;
+    DispatcherTimer timer;
+    Storyboard ambiance;
+    bool demarre, charge, quitter, bulleVue; // charge : la liste a été lue au moins une fois
 
     T F<T>(string nom) where T : class { return (T)W.FindName(nom); }
 
-    public Fenetre()
+    // cache : démarre dans la zone de notification ; signal : évènement « réafficher » de la première instance
+    public Fenetre(bool cache, EventWaitHandle signal)
     {
         W = Ui.Load<Window>("Main.xaml");
         Ui.Chrome(W);
-        F<TextBlock>("Machine").Text = Ui.Pc.ToUpperInvariant();
         pouls = (Storyboard)W.Resources["Pouls"];
         btnAnnuler = F<UIElement>("BtnCancelTimer");
         btnPlus15 = F<UIElement>("BtnPlus15");
@@ -581,7 +608,7 @@ class Fenetre
         mm = F<TextBox>("MM");
 
         F<Button>("BtnMin").Click += delegate { W.WindowState = WindowState.Minimized; };
-        F<Button>("BtnClose").Click += delegate { W.Close(); };
+        F<Button>("BtnClose").Click += delegate { Ranger(); };
         F<RadioButton>("TabTimer").Checked += delegate { Onglet(false); };
         F<RadioButton>("TabProg").Checked += delegate { Onglet(true); };
 
@@ -648,16 +675,42 @@ class Fenetre
         Saisie(hh, 24, v => h = v, d => Heure(h + d, m));
         Saisie(mm, 60, v => m = v, d => Heure(h, m + 5 * d));
 
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
-        timer.Tick += delegate { if (++ticks % 40 == 0) Recharger(); else Tick(); };
-        W.Loaded += delegate { Duree(60); Recharger(); timer.Start(); };
+        timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        timer.Tick += delegate
+        {
+            if (++ticks % 40 == 0) Recharger(); else Tick();
+            if (!W.IsVisible && charge && Suivant(DateTime.Now) == null) Quitter(); // caché et plus rien de prévu
+        };
+        W.Loaded += delegate { Demarrer(); };
         W.Activated += delegate { Recharger(); };
 
         // Animations d'ambiance en pause quand Sablier n'est pas au premier plan : quasi aucun CPU en arrière-plan
-        var ambiance = (Storyboard)W.Resources["Ambiance"];
-        W.Loaded += delegate { ambiance.Begin(W, true); if (!W.IsActive) ambiance.Pause(W); };
+        ambiance = (Storyboard)W.Resources["Ambiance"];
         W.Activated += delegate { ambiance.Resume(W); if (idle == false) pouls.Resume(W); };
         W.Deactivated += delegate { ambiance.Pause(W); if (idle == false) pouls.Pause(W); };
+
+        // Zone de notification : icône, clic gauche ou double-clic = réafficher ; menu clic droit
+        tray = new Forms.NotifyIcon { Icon = System.Drawing.Icon.ExtractAssociatedIcon(Planif.Exe), Text = "Sablier", Visible = cache };
+        tray.MouseClick += (s, e) => { if (e.Button == Forms.MouseButtons.Left) Afficher(); };
+        tray.DoubleClick += delegate { Afficher(); };
+        var menu = new Forms.ContextMenuStrip();
+        var ouvrir = new Forms.ToolStripMenuItem(Ui.T("Ouvrir Sablier", "Open Sablier"), null, delegate { Afficher(); });
+        ouvrir.Font = new System.Drawing.Font(Forms.Control.DefaultFont, System.Drawing.FontStyle.Bold);
+        var annuler = new Forms.ToolStripMenuItem(Ui.T("Annuler la minuterie", "Cancel timer"), null, delegate { Essayer(() => Planif.Supprimer("Minuterie"), Ui.T("Minuterie annulée", "Timer cancelled")); });
+        var quitterItem = new Forms.ToolStripMenuItem(Ui.T("Quitter", "Quit"), null, delegate { Quitter(); });
+        menu.Items.Add(ouvrir);
+        menu.Items.Add(annuler);
+        menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add(quitterItem);
+        menu.Opening += (s, e) => { annuler.Visible = progs.Find(p => p.Nom == "Minuterie") != null; };
+        tray.ContextMenuStrip = menu;
+
+        W.Closing += (s, e) => { if (!quitter) { e.Cancel = true; Ranger(); } }; // Alt+F4 = fermer dans la zone de notification
+        Application.Current.Exit += delegate { tray.Dispose(); };
+        // Écoute des demandes de la deuxième instance (thread d'arrière-plan)
+        if (signal != null)
+            new Thread(new ThreadStart(delegate { while (true) { signal.WaitOne(); W.Dispatcher.BeginInvoke(new Action(Afficher)); } })) { IsBackground = true }.Start();
+        if (cache) { new WindowInteropHelper(W).EnsureHandle(); Demarrer(); } // pas de Loaded sans affichage
     }
 
     void Essayer(Action a, string ok)
@@ -670,6 +723,7 @@ class Fenetre
     {
         try { progs = Planif.Liste(); }
         catch (Exception ex) { Snack(Ui.T("Planificateur inaccessible : ", "Task Scheduler unavailable: ") + ex.Message); return; }
+        charge = true;
         reveil = Planif.ProchainReveil(progs);
         if (bouton != (reveil != null))
         {
@@ -693,9 +747,7 @@ class Fenetre
     void Tick()
     {
         DateTime now = DateTime.Now;
-        Prog next = null;
-        foreach (var p in progs)
-            if (p.Actif && p.Prochain > now && (next == null || p.Prochain < next.Prochain)) next = p;
+        Prog next = Suivant(now);
 
         Idle(next == null);
         if (next == null)
@@ -720,6 +772,58 @@ class Fenetre
         heroActions.Visibility = minuterie || eteindre ? Visibility.Visible : Visibility.Hidden;
         string a = Choix("ActionsTimer");
         goSub.Text = Ui.Nom(a) + " " + Ui.Quand(now.AddMinutes(minutes)) + (a == "shutdown" && reveil != null ? Ui.T(" · en veille prolongée (allumage prévu)", " · hibernates (wake-up scheduled)") : "");
+        if (tray.Visible)
+        {
+            string info = next == null ? "Sablier" : "Sablier · " + Ui.Nom(next.Action) + " " + Ui.T("dans ", "in ") + Ui.Reste(next.Prochain - now);
+            tray.Text = info.Length > 63 ? info.Substring(0, 63) : info; // NotifyIcon.Text : 63 caractères au plus
+        }
+    }
+
+    // Prochain programme ou minuterie à venir, ou null
+    Prog Suivant(DateTime now)
+    {
+        Prog next = null;
+        foreach (var p in progs)
+            if (p.Actif && p.Prochain > now && (next == null || p.Prochain < next.Prochain)) next = p;
+        return next;
+    }
+
+    // Affichage initial : au Loaded, ou tout de suite si Sablier démarre caché
+    void Demarrer()
+    {
+        if (demarre) return;
+        demarre = true;
+        Duree(60); Recharger(); timer.Start();
+        ambiance.Begin(W, true); if (!W.IsActive) ambiance.Pause(W);
+    }
+
+    void Afficher()
+    {
+        W.Show();
+        if (W.WindowState == WindowState.Minimized) W.WindowState = WindowState.Normal;
+        W.Activate();
+        tray.Visible = false;
+    }
+
+    // Fermer la fenêtre : Sablier reste dans la zone de notification si quelque chose est prévu
+    void Ranger()
+    {
+        if (Suivant(DateTime.Now) == null) { W.Dispatcher.BeginInvoke(new Action(Quitter)); return; } // différé : on est dans Closing
+        W.Hide();
+        tray.Visible = true;
+        if (!bulleVue)
+        {
+            bulleVue = true;
+            tray.ShowBalloonTip(4000, "Sablier", Ui.T("Sablier reste ici tant qu'une extinction ou un allumage est prévu.", "Sablier stays here while a shutdown or wake-up is scheduled."), Forms.ToolTipIcon.None);
+        }
+    }
+
+    void Quitter()
+    {
+        quitter = true;
+        tray.Visible = false;
+        tray.Dispose();
+        Application.Current.Shutdown();
     }
 
     // Cercle plein : il pulse lentement seulement quand quelque chose est prévu
@@ -947,7 +1051,7 @@ class Alerte
             if (reveil != null) info.Text = Ui.T("Hibernation pour que l'allumage prévu " + Ui.Quand(reveil.Prochain) + " ait lieu",
                                                  "Hibernating so the wake-up scheduled " + Ui.Quand(reveil.Prochain) + " can happen");
         }
-        ((TextBlock)W.FindName("Titre")).Text = Ui.Pc.ToUpperInvariant() + " " + Ui.Va(action);
+        ((TextBlock)W.FindName("Titre")).Text = Ui.T("Ce PC ", "This PC ") + Ui.Va(action);
         fin = DateTime.Now.AddSeconds(secondes);
         sec.Text = secondes.ToString();
         timer.Tick += delegate
@@ -980,7 +1084,7 @@ class Alerte
 
 class Setup
 {
-    const string Version = "1.1";
+    const string Version = "1.2";
     const string CleDesinstall = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Sablier";
     const string CleRun = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string EteindreFr = "Éteindre le PC.lnk", EteindreEn = "Shut down PC.lnk";
@@ -997,7 +1101,6 @@ class Setup
     {
         W = Ui.Load<Window>("Setup.xaml");
         Ui.Chrome(W);
-        ((TextBlock)W.FindName("Machine")).Text = Ui.Pc.ToUpperInvariant();
         var go = (Button)W.FindName("BtnInstaller");
         var goText = (TextBlock)W.FindName("GoText");
         var statut = (TextBlock)W.FindName("Statut");

@@ -17,7 +17,8 @@
 - **Allumage programmé** : le PC sort de veille ou d'hibernation à l'heure voulue et reste allumé jusqu'à votre retour.
 - **Toujours 60 secondes pour annuler** : une alerte animée prévient avant chaque arrêt (Annuler, +15 min, Maintenant).
 - **Malin avec l'allumage** : tant qu'un allumage est prévu, le bouton d'alimentation du PC, « Éteindre le PC », les arrêts programmés et les minuteries « Arrêt » passent en hibernation, pour que le PC puisse se rallumer. Sinon, ils éteignent normalement.
-- **Léger** : rien ne tourne en arrière-plan, chaque programme est une tâche du Planificateur Windows. Fenêtre ouverte mais pas au premier plan : environ 0,5 % d'un cœur de processeur.
+- **Zone de notification** : fermez Sablier pendant qu'une extinction, une minuterie ou un allumage est prévu, son icône reste près de l'horloge. Au survol, le temps restant ; clic pour le rouvrir ; clic droit pour ouvrir Sablier, annuler la minuterie ou quitter. S'il ne reste rien de prévu, Sablier se ferme vraiment. À l'ouverture de session, il s'y range si quelque chose est prévu.
+- **Léger et fiable** : chaque programme est une tâche du Planificateur de tâches Windows. L'extinction et l'allumage ont donc lieu même si Sablier est fermé. Fenêtre ouverte mais pas au premier plan : environ 0,5 % d'un cœur de processeur.
 
 <p align="center">
   <img src="docs/minuterie.png" width="31%" alt="Minuterie">
@@ -89,7 +90,8 @@ Sablier est gratuit. S'il vous rend service, une ⭐ sur ce dépôt aide d'autre
 - **Scheduled wake-up**: the PC wakes from sleep or hibernation on its own and stays on until you're back.
 - **Always 60 seconds to cancel** before any shutdown (Cancel, +15 min, Now).
 - **Adapts to wake-ups**: while a wake-up is scheduled, the power button, the "Shut down PC" shortcut, scheduled shutdowns and "Shut down" timers hibernate instead of shutting down, so the PC can wake up again. Otherwise they shut down normally.
-- **Lightweight**: nothing runs in the background (each schedule is a Windows Task Scheduler task); no data collected, no internet connection.
+- **Notification area**: close Sablier while a shutdown, timer or wake-up is scheduled and its icon stays near the clock. Hover to see the time left; click to reopen; right-click to open Sablier, cancel the timer or quit. If nothing is left scheduled, Sablier really closes. At sign-in, it moves there if something is scheduled.
+- **Lightweight and reliable**: each schedule is a Windows Task Scheduler task, so shutdowns and wake-ups happen even when Sablier is closed. No data collected, no internet connection.
 
 <p align="center">
   <img src="docs/en/minuterie.png" width="31%" alt="Timer">

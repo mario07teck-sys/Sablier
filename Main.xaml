@@ -80,9 +80,6 @@
           <TextBlock Text="&#xE916;" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="#FF0A0E17" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
         <TextBlock Text="Sablier" FontSize="16" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center"/>
-        <Border Margin="10,1,0,0" Padding="8,3" CornerRadius="7" Background="#12FFFFFF" BorderBrush="#1CFFFFFF" BorderThickness="1" VerticalAlignment="Center">
-          <TextBlock x:Name="Machine" FontSize="10.5" FontWeight="Bold" Foreground="#FF%A1%"/>
-        </Border>
       </StackPanel>
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" WindowChrome.IsHitTestVisibleInChrome="True">
         <Button x:Name="BtnMin" Style="{StaticResource Chrome}" Content="&#xE921;" ToolTip="Réduire" AutomationProperties.Name="Réduire"/>

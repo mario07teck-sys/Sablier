@@ -42,7 +42,7 @@ if (-not (Test-Path Sablier.ico)) {
 
 & "$fw\csc.exe" /nologo /target:winexe /optimize+ /out:Sablier.exe /win32icon:Sablier.ico `
     /r:"$fw\WPF\PresentationFramework.dll" /r:"$fw\WPF\PresentationCore.dll" /r:"$fw\WPF\WindowsBase.dll" `
-    /r:"$fw\System.Xaml.dll" /r:"$fw\Microsoft.CSharp.dll" `
+    /r:"$fw\System.Xaml.dll" /r:"$fw\Microsoft.CSharp.dll" /r:"$fw\System.Windows.Forms.dll" /r:"$fw\System.Drawing.dll" `
     /resource:Theme.xaml,Theme.xaml /resource:Main.xaml,Main.xaml /resource:Alerte.xaml,Alerte.xaml /resource:Setup.xaml,Setup.xaml `
     Sablier.cs
 if ($LASTEXITCODE -ne 0) { throw "Échec de la compilation" }
