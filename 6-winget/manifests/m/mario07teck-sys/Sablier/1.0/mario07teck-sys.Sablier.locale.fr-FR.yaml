@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: mario07teck-sys.Sablier
+PackageVersion: "1.0"
+PackageLocale: fr-FR
+Publisher: mario07teck-sys
+PublisherUrl: https://github.com/mario07teck-sys
+PackageName: Sablier
+PackageUrl: https://github.com/mario07teck-sys/Sablier
+License: MIT
+LicenseUrl: https://github.com/mario07teck-sys/Sablier/blob/main/LICENSE
+ShortDescription: Minuterie d'arrêt et allumage programmé pour Windows.
+Description: Éteignez votre PC dans X heures, ou éteignez-le et allumez-le à heure fixe, une fois ou chaque semaine. Alerte de 60 secondes pour annuler avant chaque arrêt, interface moderne, sans droits administrateur.
+Moniker: sablier
+Tags:
+  - arret
+  - minuterie
+  - shutdown
+  - timer
+  - hibernate
+  - sleep
+  - wake
+  - scheduler
+ReleaseNotesUrl: https://github.com/mario07teck-sys/Sablier/releases/tag/v1.0
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

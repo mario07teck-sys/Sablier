@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.6.0.schema.json
+PackageIdentifier: mario07teck-sys.Sablier
+PackageVersion: "1.0"
+PackageLocale: en-US
+Publisher: mario07teck-sys
+PublisherUrl: https://github.com/mario07teck-sys
+PackageName: Sablier
+PackageUrl: https://github.com/mario07teck-sys/Sablier
+License: MIT
+LicenseUrl: https://github.com/mario07teck-sys/Sablier/blob/main/LICENSE
+ShortDescription: Shutdown timer and scheduled wake-up for Windows.
+Description: Shut down your PC in X hours, or turn it off and wake it up at set times, once or every week. 60-second warning to cancel before any shutdown, modern UI, no admin rights.
+Tags:
+  - shutdown
+  - timer
+  - hibernate
+  - sleep
+  - wake
+  - scheduler
+ReleaseNotesUrl: https://github.com/mario07teck-sys/Sablier/releases/tag/v1.0
+ManifestType: locale
+ManifestVersion: 1.6.0
