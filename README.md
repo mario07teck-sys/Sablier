@@ -16,7 +16,7 @@
 - **Programmes** : éteindre ou allumer le PC à une heure précise, une seule fois ou certains jours de la semaine (en semaine, le week-end, tous les jours…).
 - **Allumage programmé** : le PC sort de veille ou d'hibernation à l'heure voulue et reste allumé jusqu'à votre retour.
 - **Toujours 60 secondes pour annuler** : une alerte animée prévient avant chaque arrêt (Annuler, +15 min, Maintenant).
-- **Malin avec l'allumage** : tant qu'un allumage est prévu, le bouton d'alimentation du PC et « Éteindre le PC » passent en hibernation, pour que le PC puisse se rallumer. Sinon, ils éteignent normalement.
+- **Malin avec l'allumage** : tant qu'un allumage est prévu, le bouton d'alimentation du PC, « Éteindre le PC », les arrêts programmés et les minuteries « Arrêt » passent en hibernation, pour que le PC puisse se rallumer. Sinon, ils éteignent normalement.
 - **Léger** : rien ne tourne en arrière-plan, chaque programme est une tâche du Planificateur Windows. Fenêtre ouverte mais pas au premier plan : environ 0,5 % d'un cœur de processeur.
 
 <p align="center">
@@ -43,10 +43,14 @@ Pour désinstaller : *Paramètres › Applications › Applications installées 
 
 Windows ne peut réveiller un PC que s'il est **en veille ou en hibernation**, pas après un arrêt complet. Pour éteindre quand un allumage est prévu, utilisez :
 
-- le **bouton d'alimentation** du PC (Sablier le règle sur « hibernation » le temps que l'allumage est prévu, puis le remet comme avant),
-- ou **« Éteindre le PC »** (menu Démarrer, ou clic droit sur Sablier épinglé à la barre des tâches).
+- le bouton **« Éteindre »** sous l'horloge de Sablier, ou **« Éteindre le PC »** (menu Démarrer, ou clic droit sur Sablier épinglé à la barre des tâches),
+- le **bouton d'alimentation** du PC (Sablier le règle sur « hibernation » le temps que l'allumage est prévu, puis le remet comme avant).
+
+Les arrêts programmés et les minuteries « Arrêt » hibernent eux aussi. Après avoir enregistré un allumage, Sablier vous explique comment éteindre pour qu'il ait lieu.
 
 L'« Arrêter » du menu Démarrer de Windows fait un arrêt complet : l'allumage n'aura pas lieu. Le réglage « Autoriser les minuteurs de sortie de veille » doit être activé ; Sablier s'en charge.
+
+Un allumage **une seule fois** se supprime de lui-même une fois passé.
 
 ## Questions fréquentes
 
@@ -84,7 +88,7 @@ Sablier est gratuit. S'il vous rend service, une ⭐ sur ce dépôt aide d'autre
 - **Schedules**: turn the PC off or wake it up at a set time, once or on chosen days.
 - **Scheduled wake-up**: the PC wakes from sleep or hibernation on its own and stays on until you're back.
 - **Always 60 seconds to cancel** before any shutdown (Cancel, +15 min, Now).
-- **Smart with wake-ups**: while a wake-up is scheduled, the power button and the "Shut down PC" shortcut hibernate instead of shutting down, so the PC can wake up again. Otherwise they shut down normally.
+- **Smart with wake-ups**: while a wake-up is scheduled, the power button, the "Shut down PC" shortcut, scheduled shutdowns and "Shut down" timers hibernate instead of shutting down, so the PC can wake up again. Otherwise they shut down normally.
 - **Lightweight**: nothing runs in the background (each schedule is a Windows Task Scheduler task); no data collected, no internet connection.
 
 <p align="center">
@@ -95,6 +99,6 @@ Sablier est gratuit. S'il vous rend service, une ⭐ sur ce dépôt aide d'autre
 
 **Install**: download `Sablier-Setup.exe`, open it, click **Install**. If Windows shows "Windows protected your PC", click **More info › Run anyway**: the exe isn't code-signed (a certificate costs hundreds of euros a year), and the full source code is right here. Uninstall from *Settings › Apps › Installed apps*. Silent install: `Sablier-Setup.exe --silent`.
 
-**Good to know**: Windows can only wake a PC from sleep or hibernation, not after a full shutdown. While a wake-up is scheduled, turn the PC off with its power button or "Shut down PC"; the Start menu's "Shut down" does a full shutdown and the wake-up won't happen.
+**Good to know**: Windows can only wake a PC from sleep or hibernation, not after a full shutdown. While a wake-up is scheduled, turn the PC off with the "Turn off" button under the clock, the power button or "Shut down PC"; the Start menu's "Shut down" does a full shutdown and the wake-up won't happen. A one-time wake-up deletes itself once it has happened.
 
 Sablier was built with the help of an AI assistant (Claude). Licensed under [MIT](LICENSE).

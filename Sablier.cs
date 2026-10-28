@@ -74,7 +74,7 @@ public class Prog
     public DateTime Debut, Cible, Prochain;
     public string Heure { get; set; }
     public bool Actif { get; set; }
-    public bool Bloque { get; set; }     // arrêt complet actif alors qu'un allumage est prévu
+    public bool Hiberne { get; set; }   // arrêt qui passera en veille prolongée car un allumage est prévu
 
     // Affichage dans la liste
     public string Glyph { get { return Ui.Glyph(Action); } }
@@ -365,7 +365,7 @@ static class Ui
         { "Réduire", "Minimize" }, { "Fermer", "Close" }, { "Annuler", "Cancel" }, { "Minuterie", "Timer" }, { "Programmes", "Schedules" },
         { "DANS", "IN" }, { "Diminuer la durée", "Decrease duration" }, { "Augmenter la durée", "Increase duration" },
         { "Arrêt", "Shut down" }, { "Redémarrer", "Restart" }, { "Veille", "Sleep" }, { "Hibernation", "Hibernate" },
-        { "Lancer la minuterie", "Start timer" }, { "Empêche l'allumage prévu", "Blocks the scheduled wake-up" },
+        { "Lancer la minuterie", "Start timer" },
         { "Activer / mettre en pause", "Enable / pause" }, { "Activer le programme", "Enable schedule" },
         { "Supprimer", "Delete" }, { "Supprimer le programme", "Delete schedule" }, { "Aucun programme", "No schedules" },
         { "Éteignez ou allumez ce PC automatiquement, une fois ou chaque semaine.", "Turn this PC off or on automatically, once or every week." },
@@ -373,8 +373,10 @@ static class Ui
         { "Heure suivante", "Next hour" }, { "Heures", "Hours" }, { "Heure précédente", "Previous hour" },
         { "Minutes suivantes", "Next minutes" }, { "Minutes précédentes", "Previous minutes" }, { "JOURS", "DAYS" },
         { "Répéter chaque semaine", "Repeat every week" }, { "Enregistrer", "Save" },
-        { "Réveille le PC depuis la veille ou l'hibernation, pas après « Arrêter » du menu Démarrer : éteignez avec le bouton du PC ou « Éteindre le PC », qui hibernent tant qu'un allumage est prévu. Le PC reste ensuite allumé jusqu'à votre retour (2 h max).",
-          "Wakes the PC from sleep or hibernation, not after \"Shut down\" in the Start menu: turn it off with the PC's power button or \"Shut down PC\", which hibernate while a wake-up is scheduled. The PC then stays on until you're back (2 h max)." },
+        { "Pour se rallumer, le PC doit être en veille prolongée, pas éteint. Tant qu'un allumage est prévu, « Éteindre » de Sablier, le bouton du PC et les arrêts programmés passent en veille prolongée. Évitez Démarrer › Arrêter.",
+          "To wake up, the PC must be hibernating, not shut down. While a wake-up is scheduled, Sablier's \"Turn off\", the PC's power button and scheduled shutdowns hibernate instead. Avoid Start › Shut down." },
+        { "En veille prolongée : allumage prévu", "Hibernates: wake-up scheduled" }, { "Veille prolongée : l'allumage prévu aura lieu", "Hibernate: the scheduled wake-up will happen" },
+        { "DATE", "DATE" }, { "Jour précédent", "Previous day" }, { "Jour suivant", "Next day" }, { "Plus tard", "Later" }, { "Éteindre maintenant", "Turn off now" },
         { "Pensez à enregistrer votre travail", "Save your work" }, { "secondes", "seconds" }, { "Maintenant", "Now" },
         { "Installer Sablier", "Install Sablier" }, { "Minuterie d'arrêt et allumage programmé", "Shutdown timer and scheduled wake-up" },
         { "Éteindre dans 30 min, 1 h, 2 h…", "Shut down in 30 min, 1 h, 2 h…" }, { "Éteindre ou allumer le PC chaque semaine", "Turn your PC off or on every week" },
@@ -427,14 +429,14 @@ static class Ui
             });
         };
         w.StateChanged += delegate { if (w.WindowState == WindowState.Maximized) w.WindowState = WindowState.Normal; };
-        // Petit écran ou mise à l'échelle 150 % : toute la fenêtre est réduite pour tenir au-dessus de la barre des tâches
+        // Fenêtre réduite pour s'adapter à l'écran (au-dessus de la barre des tâches) : ≈ 2/3 de la hauteur, jamais plus que prévu
         double dispo = SystemParameters.WorkArea.Height - 16;
-        if (w.Height > dispo)
+        double k = Math.Min(dispo / w.Height, Math.Max(0.7, Math.Min(1.0, SystemParameters.WorkArea.Height * 0.66 / w.Height)));
+        if (k < 1)
         {
-            double k = dispo / w.Height;
             ((FrameworkElement)w.Content).LayoutTransform = new ScaleTransform(k, k);
             w.MinWidth = w.Width = w.MaxWidth = w.Width * k;
-            w.MinHeight = w.Height = w.MaxHeight = dispo;
+            w.MinHeight = w.Height = w.MaxHeight = w.Height * k;
         }
     }
 
@@ -547,14 +549,13 @@ class Fenetre
     bool? bouton;   // dernier état appliqué au bouton d'alimentation
     string signature;
     int minutes = 60, h, m, ticks;
-    bool idle;
-    AnimationClock tourne; // rotation de l'anneau sans programme
-    readonly Path arc;
-    readonly Ellipse head;
-    readonly RotateTransform rot;
+    DateTime jour;  // jour de la fiche pour une seule fois
+    bool? idle;
+    Storyboard pouls;
     readonly TextBlock heroBig, heroSub, heroInfo, duree, goSub, sheetNext, snackText;
     readonly TextBox hh, mm;
     readonly FrameworkElement heroActions, snack;
+    readonly UIElement btnAnnuler, btnPlus15, btnEteindre;
 
     T F<T>(string nom) where T : class { return (T)W.FindName(nom); }
 
@@ -563,9 +564,10 @@ class Fenetre
         W = Ui.Load<Window>("Main.xaml");
         Ui.Chrome(W);
         F<TextBlock>("Machine").Text = Ui.Pc.ToUpperInvariant();
-        arc = F<Path>("Arc");
-        head = F<Ellipse>("Head");
-        rot = (RotateTransform)arc.RenderTransform;
+        pouls = (Storyboard)W.Resources["Pouls"];
+        btnAnnuler = F<UIElement>("BtnCancelTimer");
+        btnPlus15 = F<UIElement>("BtnPlus15");
+        btnEteindre = F<UIElement>("BtnEteindre");
         heroBig = F<TextBlock>("HeroBig");
         heroSub = F<TextBlock>("HeroSub");
         heroInfo = F<TextBlock>("HeroInfo");
@@ -591,7 +593,7 @@ class Fenetre
         F<Button>("BtnGo").Click += delegate
         {
             string a = Choix("ActionsTimer");
-            Essayer(() => Planif.Minuterie(minutes, a), Ui.T("Minuterie lancée · ", "Timer started · ") + Ui.Nom(a) + " " + Ui.Quand(DateTime.Now.AddMinutes(minutes)));
+            Essayer(() => Planif.Minuterie(minutes, a), Ui.T("Minuterie lancée · ", "Timer started · ") + Ui.Nom(a) + " " + Ui.Quand(DateTime.Now.AddMinutes(minutes)) + Ui.T(" · vous pouvez fermer Sablier", " · you can close Sablier"));
         };
         F<Button>("BtnCancelTimer").Click += delegate { Essayer(() => Planif.Supprimer("Minuterie"), Ui.T("Minuterie annulée", "Timer cancelled")); };
         F<Button>("BtnPlus15").Click += delegate
@@ -599,6 +601,7 @@ class Fenetre
             Prog t = progs.Find(p => p.Nom == "Minuterie");
             if (t != null) Essayer(() => { t.Cible = t.Cible.AddMinutes(15); Planif.Enregistrer(t); }, Ui.T("Minuterie prolongée de 15 min", "Timer extended by 15 min"));
         };
+        F<Button>("BtnEteindre").Click += delegate { EteindreMaintenant(); };
 
         // Programmes
         F<Button>("BtnNouveau").Click += delegate { OuvrirFiche(); };
@@ -632,6 +635,10 @@ class Fenetre
         F<RadioButton>("KindOff").Checked += delegate { MajFiche(); };
         F<RadioButton>("KindOn").Checked += delegate { MajFiche(); };
         F<ToggleButton>("Repeat").Click += delegate { MajFiche(); };
+        F<Button>("DPrev").Click += delegate { jour = jour.AddDays(-1) < DateTime.Today ? DateTime.Today : jour.AddDays(-1); MajFiche(); };
+        F<Button>("DNext").Click += delegate { jour = jour.AddDays(1); MajFiche(); };
+        F<Button>("GuideTard").Click += delegate { FermerFiche(); };
+        F<Button>("GuideOff").Click += delegate { EteindreMaintenant(); FermerFiche(); };
         foreach (ToggleButton t in F<Panel>("Jours").Children) t.Click += delegate { MajFiche(); };
         foreach (RadioButton r in F<Panel>("ActionsProg").Children) r.Checked += delegate { MajFiche(); };
         F<ButtonBase>("HUp").Click += delegate { Heure(h + 1, m); };
@@ -649,8 +656,8 @@ class Fenetre
         // Animations d'ambiance en pause quand Sablier n'est pas au premier plan : quasi aucun CPU en arrière-plan
         var ambiance = (Storyboard)W.Resources["Ambiance"];
         W.Loaded += delegate { ambiance.Begin(W, true); if (!W.IsActive) ambiance.Pause(W); };
-        W.Activated += delegate { ambiance.Resume(W); if (tourne != null) tourne.Controller.Resume(); };
-        W.Deactivated += delegate { ambiance.Pause(W); if (tourne != null) tourne.Controller.Pause(); };
+        W.Activated += delegate { ambiance.Resume(W); if (idle == false) pouls.Resume(W); };
+        W.Deactivated += delegate { ambiance.Pause(W); if (idle == false) pouls.Pause(W); };
     }
 
     void Essayer(Action a, string ok)
@@ -671,9 +678,9 @@ class Fenetre
         }
         var liste = progs.FindAll(p => p.Kind != "timer");
         liste.Sort((a, b) => string.CompareOrdinal(a.Heure, b.Heure));
-        foreach (var p in liste) p.Bloque = reveil != null && p.Actif && p.Action == "shutdown";
+        foreach (var p in liste) p.Hiberne = reveil != null && p.Actif && p.Action == "shutdown";
         // la date du jour reconstruit la liste après minuit (« demain » → « aujourd'hui »)
-        string sig = string.Join("|", liste.ConvertAll(p => p.Nom + p.Actif + p.Bloque).ToArray()) + DateTime.Today.ToString("yyyyMMdd");
+        string sig = string.Join("|", liste.ConvertAll(p => p.Nom + p.Actif + p.Hiberne).ToArray()) + DateTime.Today.ToString("yyyyMMdd");
         if (sig != signature)
         {
             signature = sig;
@@ -696,45 +703,39 @@ class Fenetre
             heroBig.Text = now.ToString("HH:mm", Ui.Culture);
             heroSub.Text = Ui.T("Aucun programme", "Nothing scheduled");
             heroInfo.Text = Ui.T("Ce PC reste allumé", "This PC stays on");
-            heroActions.Visibility = Visibility.Hidden;
         }
         else
         {
-            bool minuterie = next.Kind == "timer";
             TimeSpan reste = next.Prochain - now;
             heroBig.Text = Ui.Reste(reste);
             heroSub.Text = Ui.Avant(next.Action);
-            heroInfo.Text = (minuterie ? Ui.T("Minuterie", "Timer") : Ui.T("Programme", "Schedule")) + " · " + Ui.Nom(next.Action) + " " + Ui.Quand(next.Prochain);
-            heroActions.Visibility = minuterie ? Visibility.Visible : Visibility.Hidden;
-            double total = minuterie ? (next.Cible - next.Debut).TotalSeconds : 86400; // un programme remplit l'anneau sur ses dernières 24 h
-            Point bout = Ui.Arc(arc, reste.TotalSeconds / total, 116, 95);
-            Canvas.SetLeft(head, bout.X - 7);
-            Canvas.SetTop(head, bout.Y - 7);
+            heroInfo.Text = (next.Kind == "timer" ? Ui.T("Minuterie", "Timer") : Ui.T("Programme", "Schedule")) + " · " + Ui.Nom(next.Action) + " " + Ui.Quand(next.Prochain);
         }
+        // boutons du héros : annuler / +15 min pour une minuterie, éteindre en veille prolongée s'il y a un allumage prévu
+        bool minuterie = next != null && next.Kind == "timer";
+        bool eteindre = next != null && reveil != null;
+        btnAnnuler.Visibility = minuterie ? Visibility.Visible : Visibility.Collapsed;
+        btnPlus15.Visibility = minuterie ? Visibility.Visible : Visibility.Collapsed;
+        btnEteindre.Visibility = eteindre ? Visibility.Visible : Visibility.Collapsed;
+        heroActions.Visibility = minuterie || eteindre ? Visibility.Visible : Visibility.Hidden;
         string a = Choix("ActionsTimer");
-        goSub.Text = Ui.Nom(a) + " " + Ui.Quand(now.AddMinutes(minutes)) + (a == "shutdown" && reveil != null ? Ui.T(" · empêche l'allumage", " · blocks the wake-up") : "");
+        goSub.Text = Ui.Nom(a) + " " + Ui.Quand(now.AddMinutes(minutes)) + (a == "shutdown" && reveil != null ? Ui.T(" · en veille prolongée (allumage prévu)", " · hibernates (wake-up scheduled)") : "");
     }
 
-    // Sans programme : un arc tourne lentement autour de l'horloge
+    // Cercle plein : il pulse lentement seulement quand quelque chose est prévu
     void Idle(bool on)
     {
-        if (on == idle) return;
+        if (idle == on) return;
         idle = on;
-        head.Visibility = on ? Visibility.Hidden : Visibility.Visible;
-        if (on)
-        {
-            Ui.Arc(arc, 0.22, 116, 95);
-            var tour = new DoubleAnimation(0, 360, TimeSpan.FromSeconds(6)) { RepeatBehavior = RepeatBehavior.Forever };
-            Timeline.SetDesiredFrameRate(tour, 30);
-            tourne = tour.CreateClock();
-            rot.ApplyAnimationClock(RotateTransform.AngleProperty, tourne);
-            if (!W.IsActive) tourne.Controller.Pause();
-        }
-        else
-        {
-            rot.ApplyAnimationClock(RotateTransform.AngleProperty, null);
-            tourne = null;
-        }
+        if (on) pouls.Stop(W);
+        else { pouls.Begin(W, true); if (!W.IsActive) pouls.Pause(W); }
+    }
+
+    // Fenêtre de 10 s avant l'extinction ; hiberne car un allumage est prévu
+    void EteindreMaintenant()
+    {
+        try { Process.Start(Planif.Exe, "--off"); }
+        catch (Exception ex) { Snack(Ui.T("Erreur : ", "Error: ") + ex.Message); }
     }
 
     void Onglet(bool prog)
@@ -806,7 +807,8 @@ class Fenetre
         F<RadioButton>("KindOff").IsChecked = true;
         F<RadioButton>("TabProg").IsChecked = true;
         foreach (ToggleButton t in F<Panel>("Jours").Children) t.IsChecked = false;
-        F<ToggleButton>("Repeat").IsChecked = true;
+        F<ToggleButton>("Repeat").IsChecked = false;
+        jour = Prog.Prochaine(new TimeSpan(h, m, 0), "0000000").Date;
         AfficherHeure();
         MajFiche();
         F<UIElement>("Sheet").Visibility = Visibility.Visible;
@@ -815,12 +817,39 @@ class Fenetre
         hh.Focus();
     }
 
+    // Ferme la carte visible (fiche ou guide) ; la fiche est remise prête pour la prochaine ouverture
     void FermerFiche()
     {
+        var carte = F<FrameworkElement>(F<UIElement>("GuideCard").Visibility == Visibility.Visible ? "GuideCard" : "SheetCard");
         Ui.Anim(F<UIElement>("SheetDim"), UIElement.OpacityProperty, 0, 220);
         var a = new DoubleAnimation(640, TimeSpan.FromMilliseconds(260)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
-        a.Completed += delegate { F<UIElement>("Sheet").Visibility = Visibility.Collapsed; };
-        ((TranslateTransform)F<FrameworkElement>("SheetCard").RenderTransform).BeginAnimation(TranslateTransform.YProperty, a);
+        a.Completed += delegate
+        {
+            F<UIElement>("Sheet").Visibility = Visibility.Collapsed;
+            F<UIElement>("GuideCard").Visibility = Visibility.Collapsed;
+            F<UIElement>("SheetCard").Visibility = Visibility.Visible;
+        };
+        ((TranslateTransform)carte.RenderTransform).BeginAnimation(TranslateTransform.YProperty, a);
+    }
+
+    // Moment de la fiche : prochaine occurrence si répété, sinon le jour choisi
+    DateTime CibleFiche(bool rep, string jours)
+    {
+        return rep ? Prog.Prochaine(new TimeSpan(h, m, 0), jours) : jour.Add(new TimeSpan(h, m, 0));
+    }
+
+    // Après un allumage : explique comment éteindre pour qu'il ait lieu
+    void Guide(Prog p)
+    {
+        F<UIElement>("SheetCard").Visibility = Visibility.Collapsed;
+        F<UIElement>("GuideCard").Visibility = Visibility.Visible;
+        Ui.Anim(F<FrameworkElement>("GuideCard").RenderTransform, TranslateTransform.YProperty, 0, 420, 640);
+        F<TextBlock>("GuideTitre").Text = Ui.T("Allumage prévu ", "Wake-up scheduled ") + Ui.Quand(p.Cible);
+        string texte = Ui.T(
+            "Pour que le PC se rallume tout seul, il doit être en veille prolongée, pas éteint.\n\n• Éteignez avec « Éteindre » dans Sablier (ou son raccourci « Éteindre le PC ») ou avec le bouton d'alimentation du PC.\n• Les arrêts programmés et minuteries « Arrêt » passent eux aussi en veille prolongée.\n• Évitez Démarrer › Arrêter : l'allumage n'aurait pas lieu.\n\nAu réveil, le PC reste allumé jusqu'à votre retour (2 h max).",
+            "To wake up on its own, the PC must be hibernating, not shut down.\n\n• Turn off with \"Turn off\" in Sablier (or its \"Shut down PC\" shortcut) or with the PC's power button.\n• Scheduled shutdowns and shut-down timers hibernate too.\n• Avoid Start › Shut down: the wake-up would not happen.\n\nOnce woken, the PC stays on until you're back (2 h max).");
+        if (p.Repeter) texte = Ui.T("Allumage récurrent : " + Ui.Jours(p.Jours) + ".\n\n", "Recurring wake-up: " + Ui.Jours(p.Jours) + ".\n\n") + texte;
+        F<TextBlock>("GuideTexte").Text = texte;
     }
 
     void MajFiche()
@@ -829,15 +858,20 @@ class Fenetre
         F<UIElement>("SheetActions").Visibility = allumer ? Visibility.Hidden : Visibility.Visible;
         F<UIElement>("WakeNote").Visibility = allumer ? Visibility.Visible : Visibility.Hidden;
         bool rep = F<ToggleButton>("Repeat").IsChecked == true;
+        F<UIElement>("JoursPanel").Visibility = rep ? Visibility.Visible : Visibility.Hidden;
+        F<UIElement>("DatePanel").Visibility = rep ? Visibility.Hidden : Visibility.Visible;
+        string date = Ui.Jour(jour);
+        F<TextBlock>("DateText").Text = char.ToUpper(date[0]) + date.Substring(1);
         string jours = JoursCoches();
         if (rep && jours == "0000000") jours = "1111111";
-        DateTime next = Prog.Prochaine(new TimeSpan(h, m, 0), jours);
+        DateTime next = CibleFiche(rep, jours);
         sheetNext.Text = (rep ? Ui.Jours(jours) + Ui.T(" · prochaine fois ", " · next ") : Ui.T("Une seule fois, ", "Once, ")) + Ui.Quand(next);
+        if (!rep && next <= DateTime.Now) sheetNext.Text = Ui.T("Heure déjà passée : choisissez un autre jour", "Time already passed: pick another day");
         var warn = F<TextBlock>("SheetWarn");
         bool bloque = !allumer && reveil != null && Choix("ActionsProg") == "shutdown";
         warn.Visibility = bloque ? Visibility.Visible : Visibility.Collapsed;
-        if (bloque) warn.Text = Ui.T("Un allumage est prévu " + Ui.Quand(reveil.Prochain) + " : un arrêt complet l'empêchera. Choisissez Hibernation pour qu'il ait lieu.",
-                                     "A wake-up is scheduled " + Ui.Quand(reveil.Prochain) + ": a full shutdown will prevent it. Choose Hibernate so it can happen.");
+        if (bloque) warn.Text = Ui.T("Un allumage est prévu " + Ui.Quand(reveil.Prochain) + " : cet arrêt se fera en veille prolongée pour qu'il ait lieu.",
+                                     "A wake-up is scheduled " + Ui.Quand(reveil.Prochain) + ": this shutdown will hibernate so it can happen.");
     }
 
     void EnregistrerFiche()
@@ -845,16 +879,18 @@ class Fenetre
         bool allumer = F<RadioButton>("KindOn").IsChecked == true, rep = F<ToggleButton>("Repeat").IsChecked == true;
         string jours = JoursCoches();
         if (rep && jours == "0000000") jours = "1111111";
+        DateTime cible = CibleFiche(rep, jours);
+        if (!rep && cible <= DateTime.Now) { Snack(Ui.T("Heure déjà passée : choisissez un autre jour", "Time already passed: pick another day")); return; }
         var p = new Prog
         {
             Nom = "Programme-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff"),
             Kind = allumer ? "on" : "off",
             Action = allumer ? "wake" : Choix("ActionsProg"),
             Heure = h.ToString("00") + ":" + m.ToString("00"),
-            Jours = jours,
+            Jours = rep ? jours : "0000000",
             Repeter = rep,
             Debut = DateTime.Now,
-            Cible = Prog.Prochaine(new TimeSpan(h, m, 0), jours)
+            Cible = cible
         };
         try
         {
@@ -862,9 +898,9 @@ class Fenetre
             Planif.Enregistrer(p);
         }
         catch (Exception ex) { Snack(Ui.T("Erreur : ", "Error: ") + (ex.InnerException ?? ex).Message); return; }
-        FermerFiche();
+        if (allumer) Guide(p); else FermerFiche();
         Recharger();
-        Snack(Ui.Nom(p.Action) + Ui.T(" programmé · ", " scheduled · ") + Ui.Quand(p.Cible));
+        Snack(Ui.Nom(p.Action) + Ui.T(" programmé · ", " scheduled · ") + Ui.Quand(p.Cible) + Ui.T(" · vous pouvez fermer Sablier", " · you can close Sablier"));
     }
 
     void Snack(string msg)
@@ -900,13 +936,14 @@ class Alerte
         var info = (TextBlock)W.FindName("Info");
         action = demande;
         // « Éteindre le PC » : hibernation si un allumage est prévu (un arrêt complet l'empêcherait), sinon arrêt normal
-        if (demande == "auto")
+        if (demande == "auto" || demande == "shutdown")
         {
             Prog reveil = null;
             bool illisible = false;
             try { reveil = Planif.ProchainReveil(Planif.Liste()); } catch (Exception) { illisible = true; }
-            // Planificateur illisible : dans le doute on hiberne, un éventuel allumage reste possible
-            action = reveil == null && !illisible ? "shutdown" : "hibernate";
+            // Planificateur illisible : dans le doute on hiberne, un éventuel allumage reste possible (« auto » seulement)
+            if (demande == "auto") action = reveil == null && !illisible ? "shutdown" : "hibernate";
+            else if (reveil != null) action = "hibernate"; // arrêt programmé : hiberne seulement si un allumage est prévu
             if (reveil != null) info.Text = Ui.T("Hibernation pour que l'allumage prévu " + Ui.Quand(reveil.Prochain) + " ait lieu",
                                                  "Hibernating so the wake-up scheduled " + Ui.Quand(reveil.Prochain) + " can happen");
         }
@@ -943,7 +980,7 @@ class Alerte
 
 class Setup
 {
-    const string Version = "1.0";
+    const string Version = "1.1";
     const string CleDesinstall = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Sablier";
     const string CleRun = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string EteindreFr = "Éteindre le PC.lnk", EteindreEn = "Shut down PC.lnk";
@@ -1086,6 +1123,7 @@ static class SelfTest
         string seul = "0000000".Remove(j, 1).Insert(j, "1");
         Ok(Prog.Prochaine(TimeSpan.Zero, seul) == DateTime.Today.AddDays(7), "jour unique déjà passé → semaine suivante");
         Ok(Ui.Reste(TimeSpan.FromSeconds(3599.2)) == "1:00:00" && Ui.Reste(TimeSpan.FromSeconds(59)) == "00:59", "format du compte à rebours");
+        Ok(Ui.Jour(DateTime.Today.AddDays(1)) == Ui.T("demain", "tomorrow"), "libellé de date");
 
         var p = new Prog { Nom = "Test-Sablier", Kind = "off", Action = "sleep", Heure = "07:30", Jours = "1010100", Repeter = true, Debut = DateTime.Now, Cible = DateTime.Now };
         Prog q = Prog.Parse(p.Meta());
