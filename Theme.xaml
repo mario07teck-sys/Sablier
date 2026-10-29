@@ -115,13 +115,7 @@
     <Setter Property="Foreground" Value="#FF0A0E17"/>
     <Setter Property="FontSize" Value="14.5"/>
     <Setter Property="FontWeight" Value="Bold"/>
-    <Setter Property="Effect">
-      <Setter.Value><DropShadowEffect ShadowDepth="0" BlurRadius="26" Opacity="0.45" Color="#FF%A1%"/></Setter.Value>
-    </Setter>
-    <!-- ombre gardée en cache : les halos animés derrière ne la font pas recalculer à chaque image -->
-    <Setter Property="CacheMode">
-      <Setter.Value><BitmapCache/></Setter.Value>
-    </Setter>
+    <!-- pas de lueur (DropShadowEffect) : elle rendait le texte flou quand la fenêtre est réduite à l'échelle de l'écran -->
   </Style>
 
   <Style x:Key="Mini" TargetType="Button" BasedOn="{StaticResource Btn}">
@@ -141,16 +135,24 @@
     <Setter Property="Foreground" Value="{StaticResource Sub}"/>
   </Style>
 
-  <Style x:Key="Spin" TargetType="RepeatButton" BasedOn="{StaticResource Btn}">
-    <Setter Property="Width" Value="100"/>
-    <Setter Property="Height" Value="26"/>
-    <Setter Property="Background" Value="Transparent"/>
-    <Setter Property="BorderThickness" Value="0"/>
-    <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
-    <Setter Property="FontSize" Value="12"/>
+  <!-- Choix en texte (DANS | À HEURE FIXE, UNE FOIS | CHAQUE SEMAINE) : l'actif prend la couleur d'accent -->
+  <Style x:Key="ModeLabel" TargetType="RadioButton">
     <Setter Property="Foreground" Value="{StaticResource Sub}"/>
-    <Setter Property="Delay" Value="350"/>
-    <Setter Property="Interval" Value="90"/>
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="FocusVisualStyle" Value="{StaticResource Focus}"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="RadioButton">
+          <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="White"/></Trigger>
+            <Trigger Property="IsChecked" Value="True"><Setter Property="Foreground" Value="#FF%A1%"/></Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
   </Style>
 
   <!-- Choix segmenté : le dégradé d'accent apparaît en fondu -->

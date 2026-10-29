@@ -118,22 +118,28 @@
       </StackPanel>
     </StackPanel>
 
-    <!-- Onglets -->
+    <!-- Onglets : Extinction | Allumage | Programmes -->
     <Grid Grid.Row="2" Margin="24,12,24,0" Height="44">
       <Border CornerRadius="14" Background="#0AFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1"/>
-      <Border x:Name="TabPill" Width="182" HorizontalAlignment="Left" Margin="4" CornerRadius="10" Background="#1CFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1">
+      <Border x:Name="TabPill" Width="121.33" HorizontalAlignment="Left" Margin="4" CornerRadius="10" Background="#1CFFFFFF" BorderBrush="#14FFFFFF" BorderThickness="1">
         <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
       </Border>
-      <UniformGrid Columns="2" Margin="4">
-        <RadioButton x:Name="TabTimer" Style="{StaticResource Tab}" IsChecked="True">
+      <UniformGrid Columns="3" Margin="4">
+        <RadioButton x:Name="TabExt" Style="{StaticResource Tab}" IsChecked="True">
           <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE916;" FontFamily="{StaticResource Icons}" VerticalAlignment="Center" Margin="0,1,8,0"/>
-            <TextBlock Text="Minuterie"/>
+            <TextBlock Text="&#xE7E8;" FontFamily="{StaticResource Icons}" VerticalAlignment="Center" Margin="0,1,6,0"/>
+            <TextBlock Text="Extinction"/>
+          </StackPanel>
+        </RadioButton>
+        <RadioButton x:Name="TabOn" Style="{StaticResource Tab}">
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="&#xE706;" FontFamily="{StaticResource Icons}" VerticalAlignment="Center" Margin="0,1,6,0"/>
+            <TextBlock Text="Allumage"/>
           </StackPanel>
         </RadioButton>
         <RadioButton x:Name="TabProg" Style="{StaticResource Tab}">
           <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE787;" FontFamily="{StaticResource Icons}" VerticalAlignment="Center" Margin="0,1,8,0"/>
+            <TextBlock Text="&#xE787;" FontFamily="{StaticResource Icons}" VerticalAlignment="Center" Margin="0,1,6,0"/>
             <TextBlock Text="Programmes"/>
           </StackPanel>
         </RadioButton>
@@ -141,26 +147,54 @@
     </Grid>
 
     <Grid Grid.Row="3" Margin="24,16,24,22">
-      <!-- Minuterie -->
-      <StackPanel x:Name="PanelTimer">
+      <!-- Extinction : minuterie « Dans », ou extinction à heure fixe -->
+      <StackPanel x:Name="PanelExt">
         <StackPanel.RenderTransform><TranslateTransform/></StackPanel.RenderTransform>
         <Border x:Name="DureeCard" Style="{StaticResource Card}" Padding="14,12,14,10">
           <StackPanel>
-            <TextBlock Text="DANS" Style="{StaticResource Label}" HorizontalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <RadioButton x:Name="ModeDans" Style="{StaticResource ModeLabel}" Content="DANS" IsChecked="True"/>
+              <RadioButton x:Name="ModeFixe" Style="{StaticResource ModeLabel}" Content="À HEURE FIXE" Margin="16,0,0,0"/>
+            </StackPanel>
             <Grid Margin="0,2,0,0">
-              <Button x:Name="BtnMoins" Style="{StaticResource Btn}" Width="44" Height="44" HorizontalAlignment="Left" FontFamily="{StaticResource Icons}" FontSize="14" Content="&#xE738;" AutomationProperties.Name="Diminuer la durée"/>
-              <TextBlock x:Name="Duree" Text="1 h" FontSize="36" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                <TextBlock.RenderTransform><ScaleTransform/></TextBlock.RenderTransform>
-              </TextBlock>
-              <Button x:Name="BtnPlus" Style="{StaticResource Btn}" Width="44" Height="44" HorizontalAlignment="Right" FontFamily="{StaticResource Icons}" FontSize="14" Content="&#xE710;" AutomationProperties.Name="Augmenter la durée"/>
+              <StackPanel x:Name="DansPanel">
+                <Grid>
+                  <Button x:Name="BtnMoins" Style="{StaticResource Btn}" Width="44" Height="44" HorizontalAlignment="Left" FontFamily="{StaticResource Icons}" FontSize="14" Content="&#xE738;" AutomationProperties.Name="Diminuer la durée"/>
+                  <TextBlock x:Name="Duree" Text="1 h" FontSize="36" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                    <TextBlock.RenderTransform><ScaleTransform/></TextBlock.RenderTransform>
+                  </TextBlock>
+                  <Button x:Name="BtnPlus" Style="{StaticResource Btn}" Width="44" Height="44" HorizontalAlignment="Right" FontFamily="{StaticResource Icons}" FontSize="14" Content="&#xE710;" AutomationProperties.Name="Augmenter la durée"/>
+                </Grid>
+                <UniformGrid x:Name="Presets" Columns="5" Margin="-3,10,-3,0">
+                  <Button Style="{StaticResource Mini}" Tag="15" Content="15 min"/>
+                  <Button Style="{StaticResource Mini}" Tag="30" Content="30 min"/>
+                  <Button Style="{StaticResource Mini}" Tag="60" Content="1 h"/>
+                  <Button Style="{StaticResource Mini}" Tag="120" Content="2 h"/>
+                  <Button Style="{StaticResource Mini}" Tag="180" Content="3 h"/>
+                </UniformGrid>
+              </StackPanel>
+              <StackPanel x:Name="FixePanel" Visibility="Hidden">
+                <Grid>
+                  <RepeatButton x:Name="ExtMoins" Style="{StaticResource Btn}" Width="40" Height="40" HorizontalAlignment="Left" FontFamily="{StaticResource Icons}" FontSize="14" Content="&#xE738;" AutomationProperties.Name="Reculer de 15 min"/>
+                  <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBox x:Name="EHH" Style="{StaticResource TimeBox}" Width="76" Height="48" FontSize="30" AutomationProperties.Name="Heures"/>
+                    <TextBlock Text=":" FontSize="26" FontWeight="Light" VerticalAlignment="Center" Margin="6,0,6,4" Foreground="{StaticResource Sub}"/>
+                    <TextBox x:Name="EMM" Style="{StaticResource TimeBox}" Width="76" Height="48" FontSize="30" AutomationProperties.Name="Minutes"/>
+                  </StackPanel>
+                  <RepeatButton x:Name="ExtPlus" Style="{StaticResource Btn}" Width="40" Height="40" HorizontalAlignment="Right" FontFamily="{StaticResource Icons}" FontSize="14" Content="&#xE710;" AutomationProperties.Name="Avancer de 15 min"/>
+                </Grid>
+                <UniformGrid x:Name="JoursExt" Columns="7" Margin="-3,10,-3,0">
+                  <UniformGrid.LayoutTransform><ScaleTransform ScaleX="0.8" ScaleY="0.8"/></UniformGrid.LayoutTransform>
+                  <ToggleButton Style="{StaticResource Day}" Content="L"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="M"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="M"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="J"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="V"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="S"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="D"/>
+                </UniformGrid>
+              </StackPanel>
             </Grid>
-            <UniformGrid x:Name="Presets" Columns="5" Margin="-3,10,-3,0">
-              <Button Style="{StaticResource Mini}" Tag="15" Content="15 min"/>
-              <Button Style="{StaticResource Mini}" Tag="30" Content="30 min"/>
-              <Button Style="{StaticResource Mini}" Tag="60" Content="1 h"/>
-              <Button Style="{StaticResource Mini}" Tag="120" Content="2 h"/>
-              <Button Style="{StaticResource Mini}" Tag="180" Content="3 h"/>
-            </UniformGrid>
           </StackPanel>
         </Border>
         <TextBlock Text="ACTION" Style="{StaticResource Label}" Margin="4,16,0,6"/>
@@ -180,19 +214,63 @@
         </UniformGrid>
         <Button x:Name="BtnGo" Style="{StaticResource Cta}" Height="56" Margin="0,18,0,0">
           <StackPanel>
-            <TextBlock Text="Lancer la minuterie" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="GoTitre" Text="Lancer la minuterie" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
             <TextBlock x:Name="GoSub" FontSize="11.5" FontWeight="SemiBold" Opacity="0.7" HorizontalAlignment="Center"/>
           </StackPanel>
         </Button>
       </StackPanel>
 
-      <!-- Programmes -->
+      <!-- Allumage : formulaire direct -->
+      <StackPanel x:Name="PanelOn" Visibility="Collapsed">
+        <StackPanel.RenderTransform><TranslateTransform/></StackPanel.RenderTransform>
+        <Border Style="{StaticResource Card}" Padding="14,12">
+          <StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+              <RadioButton x:Name="ModeUne" Style="{StaticResource ModeLabel}" Content="UNE FOIS" IsChecked="True"/>
+              <RadioButton x:Name="ModeChaque" Style="{StaticResource ModeLabel}" Content="CHAQUE SEMAINE" Margin="16,0,0,0"/>
+            </StackPanel>
+            <Grid Margin="0,10,0,0">
+              <RepeatButton x:Name="OnMoins" Style="{StaticResource Btn}" Width="40" Height="40" HorizontalAlignment="Left" FontFamily="{StaticResource Icons}" FontSize="14" Content="&#xE738;" AutomationProperties.Name="Reculer de 15 min"/>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBox x:Name="HH" Style="{StaticResource TimeBox}" Width="80" Height="48" FontSize="30" AutomationProperties.Name="Heures"/>
+                <TextBlock Text=":" FontSize="26" FontWeight="Light" VerticalAlignment="Center" Margin="6,0,6,4" Foreground="{StaticResource Sub}"/>
+                <TextBox x:Name="MM" Style="{StaticResource TimeBox}" Width="80" Height="48" FontSize="30" AutomationProperties.Name="Minutes"/>
+              </StackPanel>
+              <RepeatButton x:Name="OnPlus" Style="{StaticResource Btn}" Width="40" Height="40" HorizontalAlignment="Right" FontFamily="{StaticResource Icons}" FontSize="14" Content="&#xE710;" AutomationProperties.Name="Avancer de 15 min"/>
+            </Grid>
+            <Grid Margin="0,10,0,0" Height="40">
+              <Grid x:Name="DateRow">
+                <Button x:Name="DPrev" Style="{StaticResource Btn}" Width="44" Height="40" HorizontalAlignment="Left" FontFamily="{StaticResource Icons}" FontSize="12" Content="&#xE76B;" AutomationProperties.Name="Jour précédent"/>
+                <TextBlock x:Name="DateText" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button x:Name="DNext" Style="{StaticResource Btn}" Width="44" Height="40" HorizontalAlignment="Right" FontFamily="{StaticResource Icons}" FontSize="12" Content="&#xE76C;" AutomationProperties.Name="Jour suivant"/>
+              </Grid>
+              <Grid x:Name="JoursOnRow" Visibility="Hidden">
+                <UniformGrid x:Name="JoursOn" Columns="7" VerticalAlignment="Center">
+                  <UniformGrid.LayoutTransform><ScaleTransform ScaleX="0.8" ScaleY="0.8"/></UniformGrid.LayoutTransform>
+                  <ToggleButton Style="{StaticResource Day}" Content="L"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="M"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="M"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="J"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="V"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="S"/>
+                  <ToggleButton Style="{StaticResource Day}" Content="D"/>
+                </UniformGrid>
+              </Grid>
+            </Grid>
+          </StackPanel>
+        </Border>
+        <TextBlock Text="Le PC doit être en veille prolongée pour se rallumer : éteignez-le avec « Éteindre » de Sablier ou le bouton du PC, pas avec Démarrer › Arrêter." TextWrapping="Wrap" FontSize="12" LineHeight="17" Foreground="{StaticResource Sub}" Margin="6,14,6,0"/>
+        <Button x:Name="BtnAllumage" Style="{StaticResource Cta}" Height="56" Margin="0,14,0,0">
+          <StackPanel>
+            <TextBlock Text="Programmer l'allumage" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="OnSub" FontSize="11.5" FontWeight="SemiBold" Opacity="0.7" HorizontalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+
+      <!-- Programmes : la liste -->
       <Grid x:Name="PanelProg" Visibility="Collapsed">
         <Grid.RenderTransform><TranslateTransform/></Grid.RenderTransform>
-        <Grid.RowDefinitions>
-          <RowDefinition Height="*"/>
-          <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
         <ScrollViewer VerticalScrollBarVisibility="Hidden" Focusable="False">
           <ItemsControl x:Name="Liste">
             <ItemsControl.ItemTemplate>
@@ -249,128 +327,15 @@
         </ScrollViewer>
         <StackPanel x:Name="Vide" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
           <TextBlock Text="&#xE787;" FontFamily="{StaticResource Icons}" FontSize="34" Foreground="#40FFFFFF" HorizontalAlignment="Center"/>
-          <TextBlock Text="Aucun programme" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,4"/>
-          <TextBlock Text="Éteignez ou allumez ce PC automatiquement, une fois ou chaque semaine." TextWrapping="Wrap" TextAlignment="Center" Width="260" Foreground="{StaticResource Sub}"/>
+          <TextBlock Text="Rien de prévu" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,4"/>
+          <TextBlock Text="Programmez une extinction ou un allumage depuis les onglets Extinction et Allumage." TextWrapping="Wrap" TextAlignment="Center" Width="260" Foreground="{StaticResource Sub}"/>
         </StackPanel>
-        <Button x:Name="BtnNouveau" Grid.Row="1" Style="{StaticResource Cta}" Height="52" Margin="0,10,0,0">
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE710;" FontFamily="{StaticResource Icons}" FontSize="13" VerticalAlignment="Center" Margin="0,1,10,0"/>
-            <TextBlock Text="Nouveau programme"/>
-          </StackPanel>
-        </Button>
       </Grid>
     </Grid>
 
-    <!-- Fiche « Nouveau programme » qui monte du bas -->
+    <!-- Guide après un allumage enregistré : comment éteindre pour qu'il ait lieu -->
     <Grid x:Name="Sheet" Grid.RowSpan="4" Visibility="Collapsed">
       <Border x:Name="SheetDim" Background="#B305070C" WindowChrome.IsHitTestVisibleInChrome="True"/>
-      <Border x:Name="SheetCard" VerticalAlignment="Bottom" CornerRadius="26,26,0,0" Background="#FF121621" BorderBrush="#1FFFFFFF" BorderThickness="1,1,1,0" Padding="24,12,24,22">
-        <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
-        <StackPanel>
-          <Border Width="42" Height="4" CornerRadius="2" Background="#33FFFFFF" HorizontalAlignment="Center"/>
-          <TextBlock Text="Nouveau programme" FontSize="20" FontWeight="SemiBold" Margin="0,14,0,12"/>
-          <UniformGrid Columns="2" Margin="-3,0">
-            <RadioButton x:Name="KindOff" Style="{StaticResource Seg}" IsChecked="True">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE708;" FontFamily="{StaticResource Icons}" FontSize="14" VerticalAlignment="Center" Margin="0,1,8,0"/>
-                <TextBlock Text="Éteindre" FontSize="13.5" FontWeight="SemiBold"/>
-              </StackPanel>
-            </RadioButton>
-            <RadioButton x:Name="KindOn" Style="{StaticResource Seg}">
-              <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE706;" FontFamily="{StaticResource Icons}" FontSize="14" VerticalAlignment="Center" Margin="0,1,8,0"/>
-                <TextBlock Text="Allumer" FontSize="13.5" FontWeight="SemiBold"/>
-              </StackPanel>
-            </RadioButton>
-          </UniformGrid>
-          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-            <StackPanel>
-              <RepeatButton x:Name="HUp" Style="{StaticResource Spin}" Content="&#xE70E;" AutomationProperties.Name="Heure suivante"/>
-              <TextBox x:Name="HH" Style="{StaticResource TimeBox}" AutomationProperties.Name="Heures"/>
-              <RepeatButton x:Name="HDown" Style="{StaticResource Spin}" Content="&#xE70D;" AutomationProperties.Name="Heure précédente"/>
-            </StackPanel>
-            <TextBlock Text=":" FontSize="44" FontWeight="Light" VerticalAlignment="Center" Margin="10,0,10,8" Foreground="{StaticResource Sub}"/>
-            <StackPanel>
-              <RepeatButton x:Name="MUp" Style="{StaticResource Spin}" Content="&#xE70E;" AutomationProperties.Name="Minutes suivantes"/>
-              <TextBox x:Name="MM" Style="{StaticResource TimeBox}" AutomationProperties.Name="Minutes"/>
-              <RepeatButton x:Name="MDown" Style="{StaticResource Spin}" Content="&#xE70D;" AutomationProperties.Name="Minutes précédentes"/>
-            </StackPanel>
-          </StackPanel>
-          <Grid Margin="4,10,0,0">
-            <TextBlock Text="Répéter chaque semaine" FontSize="13.5" VerticalAlignment="Center"/>
-            <ToggleButton x:Name="Repeat" Style="{StaticResource Switch}" HorizontalAlignment="Right"/>
-          </Grid>
-          <!-- Chaque semaine : jours cochés ; une seule fois : une date -->
-          <Grid Margin="0,10,0,0">
-            <StackPanel x:Name="JoursPanel" Visibility="Hidden">
-              <TextBlock Text="JOURS" Style="{StaticResource Label}" Margin="4,0,0,8"/>
-              <UniformGrid x:Name="Jours" Columns="7">
-                <ToggleButton Style="{StaticResource Day}" Content="L"/>
-                <ToggleButton Style="{StaticResource Day}" Content="M"/>
-                <ToggleButton Style="{StaticResource Day}" Content="M"/>
-                <ToggleButton Style="{StaticResource Day}" Content="J"/>
-                <ToggleButton Style="{StaticResource Day}" Content="V"/>
-                <ToggleButton Style="{StaticResource Day}" Content="S"/>
-                <ToggleButton Style="{StaticResource Day}" Content="D"/>
-              </UniformGrid>
-            </StackPanel>
-            <StackPanel x:Name="DatePanel">
-              <TextBlock Text="DATE" Style="{StaticResource Label}" Margin="4,0,0,8"/>
-              <Grid>
-                <Button x:Name="DPrev" Style="{StaticResource Btn}" Width="44" Height="40" HorizontalAlignment="Left" FontFamily="{StaticResource Icons}" FontSize="12" Content="&#xE76B;" AutomationProperties.Name="Jour précédent"/>
-                <TextBlock x:Name="DateText" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Button x:Name="DNext" Style="{StaticResource Btn}" Width="44" Height="40" HorizontalAlignment="Right" FontFamily="{StaticResource Icons}" FontSize="12" Content="&#xE76C;" AutomationProperties.Name="Jour suivant"/>
-              </Grid>
-            </StackPanel>
-          </Grid>
-          <Grid Margin="0,14,0,0">
-            <StackPanel x:Name="SheetActions">
-              <TextBlock Text="ACTION" Style="{StaticResource Label}" Margin="4,0,0,6"/>
-              <UniformGrid x:Name="ActionsProg" Columns="4" Margin="-3,0">
-                <RadioButton Style="{StaticResource Seg}" Tag="shutdown" IsChecked="True">
-                  <StackPanel><TextBlock Text="&#xE7E8;" Style="{StaticResource SegIcon}"/><TextBlock Text="Arrêt" Style="{StaticResource SegText}"/></StackPanel>
-                </RadioButton>
-                <RadioButton Style="{StaticResource Seg}" Tag="restart">
-                  <StackPanel><TextBlock Text="&#xE72C;" Style="{StaticResource SegIcon}"/><TextBlock Text="Redémarrer" Style="{StaticResource SegText}"/></StackPanel>
-                </RadioButton>
-                <RadioButton Style="{StaticResource Seg}" Tag="sleep">
-                  <StackPanel><TextBlock Text="&#xE708;" Style="{StaticResource SegIcon}"/><TextBlock Text="Veille" Style="{StaticResource SegText}"/></StackPanel>
-                </RadioButton>
-                <RadioButton Style="{StaticResource Seg}" Tag="hibernate">
-                  <StackPanel><TextBlock Text="&#xE823;" Style="{StaticResource SegIcon}"/><TextBlock Text="Hibernation" Style="{StaticResource SegText}"/></StackPanel>
-                </RadioButton>
-              </UniformGrid>
-            </StackPanel>
-            <Border x:Name="WakeNote" Style="{StaticResource Card}" Padding="14,12" VerticalAlignment="Center" Visibility="Hidden">
-              <Grid>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="&#xE706;" FontFamily="{StaticResource Icons}" FontSize="18" Foreground="#FFFBBF24" Margin="0,2,12,0"/>
-                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12.5" Foreground="#FFC9D1E0"
-                           Text="Pour se rallumer, le PC doit être en veille prolongée, pas éteint. Tant qu'un allumage est prévu, « Éteindre » de Sablier, le bouton du PC et les arrêts programmés passent en veille prolongée. Évitez Démarrer › Arrêter."/>
-              </Grid>
-            </Border>
-          </Grid>
-          <TextBlock x:Name="SheetWarn" TextWrapping="Wrap" FontSize="12" Foreground="#FFFBBF24" Margin="4,10,4,0" Visibility="Collapsed"/>
-          <Border Style="{StaticResource Card}" Margin="0,14,0,0" Padding="14,10" Background="#0F%A1%">
-            <Grid>
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-              </Grid.ColumnDefinitions>
-              <TextBlock Text="&#xE823;" FontFamily="{StaticResource Icons}" Foreground="#FF%A1%" VerticalAlignment="Center" Margin="0,1,10,0"/>
-              <TextBlock x:Name="SheetNext" Grid.Column="1" FontSize="12.5" Foreground="#FFC9D1E0" TextWrapping="Wrap"/>
-            </Grid>
-          </Border>
-          <UniformGrid Columns="2" Margin="-4,16,-4,0">
-            <Button x:Name="SheetCancel" Style="{StaticResource Btn}" Height="48" Margin="4,0" Content="Annuler" IsCancel="True"/>
-            <Button x:Name="SheetSave" Style="{StaticResource Cta}" Height="48" Margin="4,0" Content="Enregistrer"/>
-          </UniformGrid>
-        </StackPanel>
-      </Border>
-      <!-- Après un allumage enregistré : comment éteindre pour qu'il ait lieu -->
       <Border x:Name="GuideCard" VerticalAlignment="Bottom" CornerRadius="26,26,0,0" Background="#FF121621" BorderBrush="#1FFFFFFF" BorderThickness="1,1,1,0" Padding="24,12,24,22" Visibility="Collapsed">
         <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
         <StackPanel>
@@ -392,7 +357,6 @@
     <Border x:Name="Snack" Grid.RowSpan="4" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="24,0,24,92" Padding="16,10"
             CornerRadius="12" Background="#F21C2130" BorderBrush="#26FFFFFF" BorderThickness="1" Opacity="0" IsHitTestVisible="False">
       <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
-      <Border.Effect><DropShadowEffect ShadowDepth="6" BlurRadius="24" Opacity="0.5" Color="Black"/></Border.Effect>
       <TextBlock x:Name="SnackText" FontSize="13" TextWrapping="Wrap" MaxWidth="340" AutomationProperties.LiveSetting="Polite"/>
     </Border>
   </Grid>

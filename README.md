@@ -12,8 +12,9 @@
 
 ## Ce que fait Sablier
 
-- **Minuterie** : « éteindre dans 30 min, 1 h, 2 h… » en un clic, avec arrêt, redémarrage, veille ou hibernation.
-- **Programmes** : éteindre ou allumer le PC à une heure précise, une seule fois ou certains jours de la semaine (en semaine, le week-end, tous les jours…).
+- **Extinction** : « éteindre dans 30 min, 1 h, 2 h… » en un clic, ou à heure fixe (une fois, ou certains jours de la semaine), avec arrêt, redémarrage, veille ou hibernation.
+- **Allumage** : réveiller le PC à une heure précise, une seule fois ou chaque semaine (en semaine, le week-end, tous les jours…).
+- **Programmes** : la liste de tout ce qui est prévu, avec interrupteurs et suppression.
 - **Allumage programmé** : le PC sort de veille ou d'hibernation à l'heure voulue et reste allumé jusqu'à votre retour.
 - **Toujours 60 secondes pour annuler** : une alerte animée prévient avant chaque arrêt (Annuler, +15 min, Maintenant).
 - **Malin avec l'allumage** : tant qu'un allumage est prévu, le bouton d'alimentation du PC, « Éteindre le PC », les arrêts programmés et les minuteries « Arrêt » passent en hibernation, pour que le PC puisse se rallumer. Sinon, ils éteignent normalement.
@@ -21,9 +22,9 @@
 - **Léger et fiable** : chaque programme est une tâche du Planificateur de tâches Windows. L'extinction et l'allumage ont donc lieu même si Sablier est fermé. Processeur (mesuré sur la 1.2) : environ 1,5 % d'un cœur au premier plan, 0,3 % en arrière-plan, rien de mesurable dans la zone de notification.
 
 <p align="center">
-  <img src="docs/minuterie.png" width="31%" alt="Minuterie">
+  <img src="docs/minuterie.png" width="31%" alt="Extinction">
   <img src="docs/programmes.png" width="31%" alt="Programmes">
-  <img src="docs/fiche.png" width="31%" alt="Nouveau programme">
+  <img src="docs/fiche.png" width="31%" alt="Allumage">
 </p>
 <p align="center">
   <img src="docs/alerte.png" width="40%" alt="Alerte de 60 secondes avant l'arrêt">
@@ -85,8 +86,9 @@ Sablier est gratuit. S'il vous rend service, une ⭐ sur ce dépôt aide d'autre
 
 <p align="center"><a href="https://github.com/mario07teck-sys/Sablier/releases/latest/download/Sablier-Setup.exe"><b>⬇ Download Sablier for Windows 10 / 11</b></a></p>
 
-- **Timer**: shut down, restart, sleep or hibernate in 30 min, 1 h, 2 h… in one click.
-- **Schedules**: turn the PC off or wake it up at a set time, once or on chosen days.
+- **Shutdown**: shut down, restart, sleep or hibernate in 30 min, 1 h, 2 h… in one click, or at a set time, once or on chosen days.
+- **Wake-up**: wake the PC at a set time, once or every week (on chosen days).
+- **Schedules**: the list of everything planned, with on/off switches and delete.
 - **Scheduled wake-up**: the PC wakes from sleep or hibernation on its own and stays on until you're back.
 - **Always 60 seconds to cancel** before any shutdown (Cancel, +15 min, Now).
 - **Adapts to wake-ups**: while a wake-up is scheduled, the power button, the "Shut down PC" shortcut, scheduled shutdowns and "Shut down" timers hibernate instead of shutting down, so the PC can wake up again. Otherwise they shut down normally.
@@ -94,9 +96,9 @@ Sablier est gratuit. S'il vous rend service, une ⭐ sur ce dépôt aide d'autre
 - **Lightweight and reliable**: each schedule is a Windows Task Scheduler task, so shutdowns and wake-ups happen even when Sablier is closed. CPU (measured on 1.2): about 1.5 % of one core in the foreground, 0.3 % in the background, nothing measurable in the notification area. No data collected, no internet connection.
 
 <p align="center">
-  <img src="docs/en/minuterie.png" width="31%" alt="Timer">
+  <img src="docs/en/minuterie.png" width="31%" alt="Shutdown">
   <img src="docs/en/programmes.png" width="31%" alt="Schedules">
-  <img src="docs/en/fiche.png" width="31%" alt="New schedule">
+  <img src="docs/en/fiche.png" width="31%" alt="Wake-up">
 </p>
 
 **Install**: download `Sablier-Setup.exe`, open it, click **Install**. If Windows shows "Windows protected your PC", click **More info › Run anyway**: the exe isn't code-signed (a certificate costs hundreds of euros a year), and the full source code is right here. Uninstall from *Settings › Apps › Installed apps*. Silent install: `Sablier-Setup.exe --silent`.
