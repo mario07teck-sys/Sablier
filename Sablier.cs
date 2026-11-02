@@ -1125,7 +1125,7 @@ class Alerte
 
 class Setup
 {
-    const string Version = "1.3";
+    const string Version = "1.4";
     const string CleDesinstall = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Sablier";
     const string CleRun = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string EteindreFr = "Éteindre le PC.lnk", EteindreEn = "Shut down PC.lnk";
@@ -1219,7 +1219,7 @@ class Setup
 
     public static int Silencieux()
     {
-        try { Installer(false); return 0; }
+        try { Installer(IO.File.Exists(Bureau)); return 0; } // mise à jour silencieuse : garder le raccourci du Bureau s'il existe
         catch (Exception) { return 1; }
     }
 
