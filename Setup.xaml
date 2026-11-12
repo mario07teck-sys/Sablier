@@ -1,11 +1,29 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Installer Sablier" Width="400" Height="600" MinWidth="400" MaxWidth="400" MinHeight="600" MaxHeight="600"
+        Title="Installer Sablier" Width="400" Height="680" MinWidth="400" MaxWidth="400" MinHeight="680" MaxHeight="680"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="CanResize"
         Background="#FF0A0C12" Foreground="#FFF3F5F9" FontFamily="Segoe UI" FontSize="13" UseLayoutRounding="True">
   <WindowChrome.WindowChrome>
     <WindowChrome CaptionHeight="44" ResizeBorderThickness="0" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
   </WindowChrome.WindowChrome>
+  <Window.Resources>
+    <!-- barre de progression réelle (la valeur est animée depuis le code) -->
+    <Style x:Key="BarDet" TargetType="ProgressBar">
+      <Setter Property="Height" Value="6"/>
+      <Setter Property="Maximum" Value="100"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ProgressBar">
+            <Grid>
+              <Border CornerRadius="3" Background="#24FFFFFF"/>
+              <Border x:Name="PART_Track"/>
+              <Border x:Name="PART_Indicator" CornerRadius="3" Background="{StaticResource Grad}" HorizontalAlignment="Left"/>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
 
   <Grid ClipToBounds="True">
     <Canvas IsHitTestVisible="False">
@@ -32,7 +50,7 @@
           </EventTrigger>
         </Ellipse.Triggers>
       </Ellipse>
-      <Ellipse CacheMode="BitmapCache" Width="400" Height="400" Canvas.Left="170" Canvas.Top="300">
+      <Ellipse CacheMode="BitmapCache" Width="400" Height="400" Canvas.Left="170" Canvas.Top="380">
         <Ellipse.Fill>
           <RadialGradientBrush>
             <GradientStop Color="#40%A2%" Offset="0"/>
@@ -57,54 +75,109 @@
     <Button x:Name="BtnClose" Style="{StaticResource Chrome}" Content="&#xE8BB;" ToolTip="Fermer" AutomationProperties.Name="Fermer"
             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,10,0" WindowChrome.IsHitTestVisibleInChrome="True"/>
 
-    <StackPanel Margin="32,44,32,0">
-      <Border Width="84" Height="84" CornerRadius="26" Background="{StaticResource Grad}" HorizontalAlignment="Center">
-        <Border.Effect><DropShadowEffect ShadowDepth="0" BlurRadius="40" Opacity="0.6" Color="#FF%A1%"/></Border.Effect>
-        <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
-        <Border.Triggers>
-          <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-            <BeginStoryboard><Storyboard Timeline.DesiredFrameRate="30">
-              <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="0" To="-7" Duration="0:0:2.6" AutoReverse="True" RepeatBehavior="Forever">
-                <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
-              </DoubleAnimation>
-            </Storyboard></BeginStoryboard>
-          </EventTrigger>
-        </Border.Triggers>
-        <TextBlock Text="&#xE916;" FontFamily="{StaticResource Icons}" FontSize="40" Foreground="#FF0A0E17" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-      </Border>
-      <TextBlock Text="Sablier" FontSize="30" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,20,0,0"/>
-      <TextBlock Text="Minuterie d'arrêt et allumage programmé" Foreground="{StaticResource Sub}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+    <Grid Margin="32,44,32,28">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+      <StackPanel>
+        <Border Width="72" Height="72" CornerRadius="22" Background="{StaticResource Grad}" HorizontalAlignment="Center">
+          <Border.Effect><DropShadowEffect ShadowDepth="0" BlurRadius="40" Opacity="0.6" Color="#FF%A1%"/></Border.Effect>
+          <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
+          <Border.Triggers>
+            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+              <BeginStoryboard><Storyboard Timeline.DesiredFrameRate="30">
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="0" To="-7" Duration="0:0:2.6" AutoReverse="True" RepeatBehavior="Forever">
+                  <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+              </Storyboard></BeginStoryboard>
+            </EventTrigger>
+          </Border.Triggers>
+          <TextBlock Text="&#xE916;" FontFamily="{StaticResource Icons}" FontSize="34" Foreground="#FF0A0E17" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+        <TextBlock Text="Sablier" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,0"/>
+        <TextBlock x:Name="Slogan" Text="Minuterie d'arrêt et allumage programmé" Foreground="{StaticResource Sub}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+      </StackPanel>
 
-      <Border Style="{StaticResource Card}" Margin="0,22,0,0" Padding="16,14">
-        <StackPanel>
-          <StackPanel Orientation="Horizontal">
-            <TextBlock Text="&#xE916;" FontFamily="{StaticResource Icons}" FontSize="15" Foreground="#FF%A1%" VerticalAlignment="Center" Width="28"/>
-            <TextBlock Text="Éteindre dans 30 min, 1 h, 2 h…" VerticalAlignment="Center"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-            <TextBlock Text="&#xE787;" FontFamily="{StaticResource Icons}" FontSize="15" Foreground="#FF%A1%" VerticalAlignment="Center" Width="28"/>
-            <TextBlock Text="Éteindre ou allumer le PC chaque semaine" VerticalAlignment="Center"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-            <TextBlock Text="&#xE823;" FontFamily="{StaticResource Icons}" FontSize="15" Foreground="#FF%A1%" VerticalAlignment="Center" Width="28"/>
-            <TextBlock Text="Toujours 60 s pour annuler avant l'arrêt" VerticalAlignment="Center"/>
-          </StackPanel>
+      <Grid Grid.Row="1" Margin="0,18,0,0">
+        <!-- 1. options d'installation -->
+        <StackPanel x:Name="PageOptions">
+          <Border Style="{StaticResource Card}" Padding="16,14">
+            <StackPanel>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE916;" FontFamily="{StaticResource Icons}" FontSize="15" Foreground="#FF%A1%" VerticalAlignment="Center" Width="28"/>
+                <TextBlock x:Name="Fct1" Text="Éteindre dans 30 min, 1 h, 2 h…" VerticalAlignment="Center"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock Text="&#xE787;" FontFamily="{StaticResource Icons}" FontSize="15" Foreground="#FF%A1%" VerticalAlignment="Center" Width="28"/>
+                <TextBlock x:Name="Fct2" Text="Éteindre ou allumer le PC chaque semaine" VerticalAlignment="Center"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock Text="&#xE823;" FontFamily="{StaticResource Icons}" FontSize="15" Foreground="#FF%A1%" VerticalAlignment="Center" Width="28"/>
+                <TextBlock x:Name="Fct3" Text="Toujours 60 s pour annuler avant l'arrêt" VerticalAlignment="Center"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <TextBlock x:Name="DossierLabel" Style="{StaticResource Label}" Margin="4,18,0,6"/>
+          <Border Style="{StaticResource Card}" CornerRadius="14" Padding="14,6,6,6">
+            <DockPanel>
+              <Button x:Name="BtnParcourir" DockPanel.Dock="Right" Style="{StaticResource Mini}" Margin="8,0,0,0" Padding="14,0"/>
+              <TextBlock x:Name="DossierTexte" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" FontSize="12.5"/>
+            </DockPanel>
+          </Border>
+          <TextBlock x:Name="Place" FontSize="11.5" Foreground="{StaticResource Sub}" TextWrapping="Wrap" Margin="4,6,0,0"/>
+
+          <Grid Margin="4,16,0,0">
+            <TextBlock x:Name="BureauTexte" Text="Raccourci sur le Bureau" FontSize="13.5" VerticalAlignment="Center"/>
+            <ToggleButton x:Name="Bureau" Style="{StaticResource Switch}" HorizontalAlignment="Right" IsChecked="True"/>
+          </Grid>
+
+          <Button x:Name="BtnInstaller" Style="{StaticResource Cta}" Height="54" Margin="0,16,0,0">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock x:Name="GoIcon" Text="&#xE896;" FontFamily="{StaticResource Icons}" FontSize="15" VerticalAlignment="Center" Margin="0,1,10,0"/>
+              <TextBlock x:Name="GoText" Text="Installer" FontSize="15"/>
+            </StackPanel>
+          </Button>
+          <TextBlock x:Name="Erreur" FontSize="12" Foreground="#FFF87171" TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0" Visibility="Collapsed"/>
+          <TextBlock x:Name="Statut" Text="Pour cette session Windows · sans droits administrateur" FontSize="11.5" Foreground="{StaticResource Sub}"
+                     HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,0"/>
         </StackPanel>
-      </Border>
 
-      <Grid Margin="4,18,0,0">
-        <TextBlock Text="Raccourci sur le Bureau" FontSize="13.5" VerticalAlignment="Center"/>
-        <ToggleButton x:Name="Bureau" Style="{StaticResource Switch}" HorizontalAlignment="Right" IsChecked="True"/>
+        <!-- 2. confirmation de désinstallation -->
+        <StackPanel x:Name="PageDesinstall" Visibility="Collapsed" VerticalAlignment="Center">
+          <TextBlock x:Name="DesTitre" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center"/>
+          <TextBlock x:Name="DesTexte" Foreground="{StaticResource Sub}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,10,0,26"/>
+          <Button x:Name="BtnDesinstaller" Style="{StaticResource Cta}" Height="54"/>
+          <Button x:Name="BtnAnnulerDes" Style="{StaticResource Btn}" Margin="0,10,0,0"/>
+        </StackPanel>
+
+        <!-- 3. progression réelle -->
+        <StackPanel x:Name="PageTravail" Visibility="Collapsed" VerticalAlignment="Center">
+          <TextBlock x:Name="Pct" Text="0 %" FontSize="46" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+          <TextBlock x:Name="Etape" Foreground="{StaticResource Sub}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,22"/>
+          <ProgressBar x:Name="Barre" Style="{StaticResource BarDet}"/>
+        </StackPanel>
+
+        <!-- 4. terminé -->
+        <StackPanel x:Name="PageFin" Visibility="Collapsed" VerticalAlignment="Center">
+          <Border x:Name="Badge" Width="76" Height="76" CornerRadius="38" Background="{StaticResource Grad}" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+            <Border.RenderTransform><ScaleTransform/></Border.RenderTransform>
+            <Border.Effect><DropShadowEffect ShadowDepth="0" BlurRadius="30" Opacity="0.5" Color="#FF%A1%"/></Border.Effect>
+            <TextBlock Text="&#xE73E;" FontFamily="{StaticResource Icons}" FontSize="32" Foreground="#FF0A0E17" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <TextBlock x:Name="FinTitre" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,20,0,0"/>
+          <TextBlock x:Name="FinTexte" Foreground="{StaticResource Sub}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,26"/>
+          <Button x:Name="BtnLancer" Style="{StaticResource Cta}" Height="54"/>
+          <Button x:Name="BtnFin" Style="{StaticResource Btn}" Margin="0,10,0,0"/>
+        </StackPanel>
+
+        <!-- 5. échec -->
+        <StackPanel x:Name="PageEchec" Visibility="Collapsed" VerticalAlignment="Center">
+          <TextBlock Text="&#xE783;" FontFamily="{StaticResource Icons}" FontSize="44" Foreground="#FFF87171" HorizontalAlignment="Center"/>
+          <TextBlock x:Name="EchecTitre" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,14,0,0"/>
+          <TextBlock x:Name="EchecTexte" Foreground="{StaticResource Sub}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,26"/>
+          <Button x:Name="BtnReessayer" Style="{StaticResource Cta}" Height="54"/>
+          <Button x:Name="BtnEchecFermer" Style="{StaticResource Btn}" Margin="0,10,0,0"/>
+        </StackPanel>
       </Grid>
-
-      <Button x:Name="BtnInstaller" Style="{StaticResource Cta}" Height="54" Margin="0,18,0,0">
-        <StackPanel Orientation="Horizontal">
-          <TextBlock x:Name="GoIcon" Text="&#xE896;" FontFamily="{StaticResource Icons}" FontSize="15" VerticalAlignment="Center" Margin="0,1,10,0"/>
-          <TextBlock x:Name="GoText" Text="Installer" FontSize="15"/>
-        </StackPanel>
-      </Button>
-      <TextBlock x:Name="Statut" Text="Pour cette session Windows · sans droits administrateur" FontSize="11.5" Foreground="{StaticResource Sub}"
-                 HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,12,0,0"/>
-    </StackPanel>
+    </Grid>
   </Grid>
 </Window>

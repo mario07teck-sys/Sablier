@@ -2,7 +2,7 @@
 
 # Sablier
 
-**Éteignez et allumez votre PC automatiquement.** Sablier est un petit utilitaire Windows, gratuit et open source, pour programmer l'arrêt de votre PC dans X heures, ou l'éteindre et l'allumer à heure fixe, une fois ou chaque semaine. Interface moderne et animée, en français ou en anglais selon la langue de Windows, 119 Ko, sans droits administrateur.
+**Éteignez et allumez votre PC automatiquement.** Sablier est un petit utilitaire Windows, gratuit et open source, pour programmer l'arrêt de votre PC dans X heures, ou l'éteindre et l'allumer à heure fixe, une fois ou chaque semaine. Interface moderne et animée, en français ou en anglais selon la langue de Windows, 119 Ko, 157 Ko, sans droits administrateur.
 
 *[English below](#english)*
 
@@ -34,12 +34,12 @@
 ## Installation
 
 1. Téléchargez [`Sablier-Setup.exe`](https://github.com/mario07teck-sys/Sablier/releases/latest/download/Sablier-Setup.exe).
-2. Ouvrez-le et cliquez sur **Installer**. Pas besoin d'être administrateur ; Sablier s'ajoute au menu Démarrer (et au Bureau si vous le souhaitez).
+2. Ouvrez-le : l'assistant propose le dossier d'installation (par défaut `%LOCALAPPDATA%\Programs\Sablier`). Pour en choisir un autre, cliquez sur **Parcourir…** : Sablier s'installe alors dans un sous-dossier « Sablier » du dossier choisi. L'assistant vérifie la place disponible, puis cliquez sur **Installer** ; la barre indique l'avancement. Pas besoin d'être administrateur ; Sablier s'ajoute au menu Démarrer (et au Bureau si vous le souhaitez). À la fin, **Lancer Sablier** ou **Fermer**.
 3. Relancer le fichier plus tard installe la mise à jour. Installation silencieuse : `Sablier-Setup.exe --silent`.
 
 > **« Windows a protégé votre ordinateur » ?** Sablier n'est pas signé numériquement (un certificat coûte plusieurs centaines d'euros par an). Cliquez sur **Informations complémentaires** puis **Exécuter quand même**. Le code source complet est ici, vous pouvez le lire ou compiler l'exe vous-même.
 
-Pour désinstaller : *Paramètres › Applications › Applications installées › Sablier*. Tout est retiré : programmes, raccourcis, et réglages d'alimentation remis comme avant.
+Pour désinstaller : *Paramètres › Applications › Applications installées › Sablier*. Une fenêtre à l'image de Sablier demande confirmation, affiche la progression, puis confirme la fin. Tout est retiré : programmes, raccourcis, et réglages d'alimentation remis comme avant. Seul `Sablier.exe` est effacé du dossier d'installation, jamais autre chose ; le dossier lui-même n'est supprimé que s'il est vide (il peut être n'importe où, puisque vous le choisissez).
 
 ## Bon à savoir sur l'allumage programmé
 
@@ -82,7 +82,7 @@ Sablier est gratuit. S'il vous rend service, une ⭐ sur ce dépôt aide d'autre
 
 ## English
 
-**Turn your PC off and on automatically.** Sablier ("hourglass" in French) is a small, free and open-source Windows 10/11 utility: shut down your PC in X hours, or turn it off and wake it up at set times, once or on chosen weekdays. Modern animated UI in English or French (follows your Windows language), 119 KB, no admin rights.
+**Turn your PC off and on automatically.** Sablier ("hourglass" in French) is a small, free and open-source Windows 10/11 utility: shut down your PC in X hours, or turn it off and wake it up at set times, once or on chosen weekdays. Modern animated UI in English or French (follows your Windows language), 157 KB, no admin rights.
 
 <p align="center"><a href="https://github.com/mario07teck-sys/Sablier/releases/latest/download/Sablier-Setup.exe"><b>⬇ Download Sablier for Windows 10 / 11</b></a></p>
 
@@ -101,7 +101,9 @@ Sablier est gratuit. S'il vous rend service, une ⭐ sur ce dépôt aide d'autre
   <img src="docs/en/fiche.png" width="31%" alt="Wake-up">
 </p>
 
-**Install**: download `Sablier-Setup.exe`, open it, click **Install**. If Windows shows "Windows protected your PC", click **More info › Run anyway**: the exe isn't code-signed (a certificate costs hundreds of euros a year), and the full source code is right here. Uninstall from *Settings › Apps › Installed apps*. Silent install: `Sablier-Setup.exe --silent`.
+**Install**: download `Sablier-Setup.exe` and open it. The installer suggests a folder (by default `%LOCALAPPDATA%\Programs\Sablier`); click **Browse…** to choose another one, and Sablier is then installed in a "Sablier" subfolder of it. It checks the free space, then click **Install**; the bar shows the progress. No admin rights needed; Sablier is added to the Start menu (and to the desktop if you keep that switch on). At the end: **Launch Sablier** or **Close**. If Windows shows "Windows protected your PC", click **More info › Run anyway**: the exe isn't code-signed (a certificate costs hundreds of euros a year), and the full source code is right here. Silent install: `Sablier-Setup.exe --silent`.
+
+**Uninstall**: *Settings › Apps › Installed apps › Sablier*. A window like Sablier's asks for confirmation, shows the progress, then confirms the end. Programs, shortcuts and power settings are restored; only `Sablier.exe` is deleted from the install folder, and that folder only if it is empty.
 
 **Good to know**: Windows can only wake a PC from sleep or hibernation, not after a full shutdown. While a wake-up is scheduled, turn the PC off with the "Turn off" button under the clock, the power button or "Shut down PC"; the Start menu's "Shut down" does a full shutdown and the wake-up won't happen. A one-time wake-up deletes itself once it has happened.
 
