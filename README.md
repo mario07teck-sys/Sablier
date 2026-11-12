@@ -59,6 +59,7 @@ Un allumage **une seule fois** se supprime de lui-même une fois passé.
 - **Mes données ?** Sablier ne collecte rien et ne se connecte jamais à Internet.
 - **Et si je suis en train de travailler ?** L'arrêt n'est jamais forcé : une application avec un travail non enregistré peut le bloquer, et l'alerte de 60 s laisse le temps d'annuler.
 - **Où sont mes programmes ?** Dans le Planificateur de tâches Windows, dossier `\Sablier`.
+- **Un souci ?** Sablier note ce qu'il fait dans `%LOCALAPPDATA%\Sablier\journal.log` (sur votre PC seulement, sans donnée personnelle) : joignez ce fichier à votre signalement.
 
 ## Compiler soi-même
 
@@ -106,5 +107,7 @@ Sablier est gratuit. S'il vous rend service, une ⭐ sur ce dépôt aide d'autre
 **Uninstall**: *Settings › Apps › Installed apps › Sablier*. A window like Sablier's asks for confirmation, shows the progress, then confirms the end. Programs, shortcuts and power settings are restored; only `Sablier.exe` is deleted from the install folder, and that folder only if it is empty.
 
 **Good to know**: Windows can only wake a PC from sleep or hibernation, not after a full shutdown. While a wake-up is scheduled, turn the PC off with the "Turn off" button under the clock, the power button or "Shut down PC"; the Start menu's "Shut down" does a full shutdown and the wake-up won't happen. A one-time wake-up deletes itself once it has happened.
+
+**A problem?** Sablier logs what it does in `%LOCALAPPDATA%\Sablier\journal.log` (on your PC only, no personal data): attach that file to your report.
 
 Sablier was built with the help of an AI assistant (Claude). Licensed under [MIT](LICENSE).

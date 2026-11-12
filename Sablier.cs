@@ -38,7 +38,7 @@ static class Program
         {
             foreach (Prog p in Planif.Liste()) if (p.Actif && p.Prochain > DateTime.Now) return true;
         }
-        catch (Exception) { }
+        catch (Exception ex) { Journal.Erreur("lecture des programmes", ex); }
         return false;
     }
 
@@ -46,6 +46,10 @@ static class Program
     static int Main(string[] args)
     {
         string mode = args.Length > 0 ? args[0] : "";
+        Journal.Ecrire("Démarrage de Sablier " + Setup.Version + (args.Length > 0 ? " " + string.Join(" ", args) : ""));
+        // toute erreur non prévue finit dans le journal, sur tous les fils
+        AppDomain.CurrentDomain.UnhandledException += (s, e) => Journal.Ecrire("ERREUR fatale : " + e.ExceptionObject);
+        TaskScheduler.UnobservedTaskException += (s, e) => { Journal.Erreur("tâche", e.Exception); e.SetObserved(); };
         if (mode == "--wake") { Power.ResterEveille(); return 0; }
         if (mode == "--selftest") return SelfTest.Run();
         if (mode == "--uninstall" && args.Length > 1 && args[1] == "--quiet") { Setup.Desinstaller(null); return 0; } // winget : sans fenêtre
@@ -59,7 +63,7 @@ static class Program
 
         var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
         app.Resources = Ui.Load<ResourceDictionary>("Theme.xaml");
-        app.DispatcherUnhandledException += (s, e) => { MessageBox.Show(e.Exception.Message, "Sablier"); e.Handled = true; };
+        app.DispatcherUnhandledException += (s, e) => { Journal.Erreur("interface", e.Exception); MessageBox.Show(e.Exception.Message, "Sablier"); e.Handled = true; };
 
         Window w;
         if (mode == "--run" && args.Length > 1) w = new Alerte(args[1], 60).W;
@@ -84,6 +88,36 @@ static class Program
         }
         return app.Run(w);
     }
+}
+
+// ---------- Journal : %LOCALAPPDATA%\Sablier\journal.log, à lire d'abord en cas de bug. Jamais de contenu personnel. ----------
+
+static class Journal
+{
+    public static readonly string Fichier = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Sablier\journal.log");
+    static readonly object verrou = new object();
+
+    public static void Ecrire(string message)
+    {
+        try
+        {
+            lock (verrou)
+            {
+                IO.Directory.CreateDirectory(IO.Path.GetDirectoryName(Fichier));
+                var f = new IO.FileInfo(Fichier);
+                if (f.Exists && f.Length > 1000000) // au-delà de 1 Mo, un seul ancien journal est gardé
+                {
+                    string ancien = IO.Path.Combine(f.DirectoryName, "journal.old.log");
+                    IO.File.Delete(ancien);
+                    IO.File.Move(Fichier, ancien);
+                }
+                IO.File.AppendAllText(Fichier, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) + " " + message + Environment.NewLine, new UTF8Encoding(false));
+            }
+        }
+        catch (Exception) { } // le journal ne doit jamais faire échouer Sablier
+    }
+
+    public static void Erreur(string ou, Exception e) { Ecrire("ERREUR " + ou + " : " + e); }
 }
 
 // ---------- Programme = une tâche planifiée ----------
@@ -235,11 +269,12 @@ static class Planif
     public static void Enregistrer(Prog p)
     {
         Dossier().RegisterTask(p.Nom, p.Xml(Exe), 6, null, null, 3); // créer ou remplacer, session ouverte de l'utilisateur
+        Journal.Ecrire("Programmé : " + p.Kind + "/" + p.Action + " " + (p.Repeter ? p.Heure + " jours " + p.Jours : p.Cible.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)) + " (" + p.Nom + ")");
     }
 
-    public static void Supprimer(string nom) { Dossier().DeleteTask(nom, 0); }
+    public static void Supprimer(string nom) { Dossier().DeleteTask(nom, 0); Journal.Ecrire("Programme supprimé : " + nom); }
 
-    public static void Activer(string nom, bool on) { Dossier().GetTask(nom).Enabled = on; }
+    public static void Activer(string nom, bool on) { Dossier().GetTask(nom).Enabled = on; Journal.Ecrire((on ? "Programme activé : " : "Programme en pause : ") + nom); }
 
     // Allumage programmé le plus proche, ou null
     public static Prog ProchainReveil(List<Prog> progs)
@@ -270,6 +305,7 @@ static class Power
 
     public static void Executer(string action)
     {
+        Journal.Ecrire("Action d'alimentation : " + action);
         switch (action)
         {
             // sans /f : une appli avec un travail non enregistré peut bloquer l'arrêt plutôt que de le perdre
@@ -277,7 +313,7 @@ static class Power
             case "restart": Lancer("shutdown", "/r /t 0"); break;
             case "sleep": SetSuspendState(false, false, false); break;
             // hibernation désactivée sur ce PC (powercfg /h off) : simple veille
-            case "hibernate": if (!SetSuspendState(true, false, false)) SetSuspendState(false, false, false); break;
+            case "hibernate": if (!SetSuspendState(true, false, false)) { Journal.Ecrire("Hibernation refusée par Windows : veille à la place"); SetSuspendState(false, false, false); } break;
         }
     }
 
@@ -306,7 +342,7 @@ static class Power
 
     public static void Synchroniser()
     {
-        try { Bouton(Planif.ProchainReveil(Planif.Liste()) != null); } catch (Exception) { }
+        try { Bouton(Planif.ProchainReveil(Planif.Liste()) != null); } catch (Exception ex) { Journal.Erreur("bouton d'alimentation", ex); }
     }
 
     // Tant qu'un allumage est prévu, le bouton d'alimentation hiberne au lieu d'arrêter (sinon le PC ne pourrait pas se rallumer).
@@ -325,11 +361,13 @@ static class Power
                 {
                     Lancer("powercfg", "/set" + modes[i] + "valueindex SCHEME_CURRENT SUB_BUTTONS PBUTTONACTION 2");
                     cle.SetValue(marque, 1);
+                    Journal.Ecrire("Bouton d'alimentation (" + modes[i] + ") : Arrêter → Hibernation");
                 }
                 else if (!hiberner && cle.GetValue(marque) != null)
                 {
                     if (v[i] == 2) Lancer("powercfg", "/set" + modes[i] + "valueindex SCHEME_CURRENT SUB_BUTTONS PBUTTONACTION 3");
                     cle.DeleteValue(marque);
+                    Journal.Ecrire("Bouton d'alimentation (" + modes[i] + ") : remis sur Arrêter");
                 }
             }
         Lancer("powercfg", "/setactive SCHEME_CURRENT");
@@ -362,6 +400,7 @@ static class Power
             if (cle.GetValue("Reveil-ac") == null) cle.SetValue("Reveil-ac", v[0]);
         Lancer("powercfg", "/setacvalueindex SCHEME_CURRENT SUB_SLEEP RTCWAKE 1");
         Lancer("powercfg", "/setactive SCHEME_CURRENT");
+        Journal.Ecrire("Minuteurs de réveil autorisés (avant : " + v[0] + ")");
     }
 
     public static void RestaurerReveil()
@@ -372,6 +411,7 @@ static class Power
             if (v == null) return;
             Lancer("powercfg", "/setacvalueindex SCHEME_CURRENT SUB_SLEEP RTCWAKE " + v);
             Lancer("powercfg", "/setactive SCHEME_CURRENT");
+            Journal.Ecrire("Minuteurs de réveil remis à " + v);
         }
     }
 }
@@ -577,7 +617,7 @@ class Fenetre
     List<Prog> progs = new List<Prog>();
     Prog reveil;
     bool? bouton;   // dernier état appliqué au bouton d'alimentation
-    string signature;
+    string signature, erreurListe;
     int minutes = 60, h, m, ticks, onglet;
     // heure de chaque onglet (0 Extinction, 1 Allumage, 2 Programmes) : chaque onglet garde la sienne
     int[] hs = { (DateTime.Now.Hour + 1) % 24, 7, 0 }, mns = { 0, 0, 0 };
@@ -737,19 +777,25 @@ class Fenetre
     void Essayer(Action a, string ok)
     {
         try { a(); Recharger(); if (ok != null) Snack(ok); }
-        catch (Exception ex) { signature = null; Recharger(); Snack(Ui.T("Erreur : ", "Error: ") + (ex.InnerException ?? ex).Message); } // liste reconstruite : interrupteurs remis au vrai état
+        catch (Exception ex) { Journal.Erreur("action « " + ok + " »", ex); signature = null; Recharger(); Snack(Ui.T("Erreur : ", "Error: ") + (ex.InnerException ?? ex).Message); } // liste reconstruite : interrupteurs remis au vrai état
     }
 
     void Recharger()
     {
         try { progs = Planif.Liste(); }
-        catch (Exception ex) { Snack(Ui.T("Planificateur inaccessible : ", "Task Scheduler unavailable: ") + ex.Message); return; }
+        catch (Exception ex)
+        {
+            if (ex.Message != erreurListe) Journal.Erreur("Planificateur inaccessible", ex); // relu toutes les quelques secondes : une seule ligne par erreur
+            erreurListe = ex.Message;
+            Snack(Ui.T("Planificateur inaccessible : ", "Task Scheduler unavailable: ") + ex.Message); return;
+        }
+        erreurListe = null;
         charge = true;
         reveil = Planif.ProchainReveil(progs);
         if (bouton != (reveil != null))
         {
             bouton = reveil != null;
-            try { Power.Bouton(reveil != null); } catch (Exception) { }
+            try { Power.Bouton(reveil != null); } catch (Exception ex) { Journal.Erreur("bouton d'alimentation", ex); }
         }
         var liste = progs.FindAll(p => p.Kind != "timer");
         liste.Sort((a, b) => string.CompareOrdinal(a.Heure, b.Heure));
@@ -859,7 +905,7 @@ class Fenetre
     void EteindreMaintenant()
     {
         try { Process.Start(Planif.Exe, "--off"); }
-        catch (Exception ex) { Snack(Ui.T("Erreur : ", "Error: ") + ex.Message); }
+        catch (Exception ex) { Journal.Erreur("Éteindre maintenant", ex); Snack(Ui.T("Erreur : ", "Error: ") + ex.Message); }
     }
 
     // Trois onglets : Extinction (0), Allumage (1), Programmes (2)
@@ -1097,6 +1143,7 @@ class Alerte
                                                  "Hibernating so the wake-up scheduled " + Ui.Quand(reveil.Prochain) + " can happen");
         }
         ((TextBlock)W.FindName("Titre")).Text = Ui.T("Ce PC ", "This PC ") + Ui.Va(action);
+        Journal.Ecrire("Alerte " + secondes + " s avant : " + action + (action != demande ? " (demandé : " + demande + ")" : ""));
         fin = DateTime.Now.AddSeconds(secondes);
         sec.Text = secondes.ToString();
         timer.Tick += delegate
@@ -1106,11 +1153,11 @@ class Alerte
             sec.Text = Math.Ceiling(reste).ToString();
             Ui.Arc(arc, reste / secondes, 100, 83);
         };
-        ((Button)W.FindName("BtnAnnuler")).Click += delegate { W.Close(); };
+        ((Button)W.FindName("BtnAnnuler")).Click += delegate { Journal.Ecrire("Alerte annulée par l'utilisateur"); W.Close(); };
         ((Button)W.FindName("BtnReporter")).Click += delegate
         {
             try { Planif.Minuterie(15, demande); W.Close(); } // « auto » sera réévalué dans 15 min
-            catch (Exception ex) { info.Text = Ui.T("Report impossible : ", "Could not postpone: ") + ex.Message; }
+            catch (Exception ex) { Journal.Erreur("report de 15 min", ex); info.Text = Ui.T("Report impossible : ", "Could not postpone: ") + ex.Message; }
         };
         ((Button)W.FindName("BtnMaintenant")).Click += delegate { Go(); };
         W.Loaded += delegate { timer.Start(); SystemSounds.Exclamation.Play(); };
@@ -1132,7 +1179,7 @@ class Alerte
 
 class Setup
 {
-    public const string Version = "1.5";
+    public const string Version = "1.6";
     const string CleDesinstall = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Sablier";
     const string CleRun = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string EteindreFr = "Éteindre le PC.lnk", EteindreEn = "Shut down PC.lnk";
@@ -1237,6 +1284,7 @@ class Setup
         if (p == null) p = delegate(double f, string s) { };
         string exe = Exe(dossier);
         string avant = Installation();
+        Journal.Ecrire("Installation de Sablier " + Version + (avant == null ? " (nouvelle)" : " (mise à jour)"));
 
         p(0.02, Ui.T("Fermeture de Sablier…", "Closing Sablier…"));
         FermerAutres(avant == null ? null : Exe(avant), exe);
@@ -1290,6 +1338,7 @@ class Setup
                   Ui.T("Hibernation si un allumage est prévu, sinon arrêt", "Hibernates if a wake-up is scheduled, otherwise shuts down"));
         if (raccourciBureau) Raccourci(Bureau, exe, "", exe + ",0", description);
         else try { IO.File.Delete(Bureau); } catch (Exception) { }
+        Journal.Ecrire("Installation terminée");
         p(1, Ui.T("Terminé", "Done"));
     }
 
@@ -1333,7 +1382,7 @@ class Setup
     public static int Silencieux()
     {
         try { Install(Installation() ?? DossierParDefaut, IO.File.Exists(Bureau), null); return 0; } // mise à jour silencieuse : même dossier, raccourci du Bureau gardé s'il existe
-        catch (Exception) { return 1; }
+        catch (Exception ex) { Journal.Erreur("installation silencieuse", ex); return 1; }
     }
 
     // Retire programmes, réglages, raccourcis et inscription, puis l'exe et son dossier s'il est vide, juste après la fermeture de ce processus
@@ -1342,6 +1391,7 @@ class Setup
         if (p == null) p = delegate(double f, string s) { };
         string dossier = Installation();
         string exe = dossier == null ? null : Exe(dossier);
+        Journal.Ecrire("Désinstallation de Sablier " + Version);
 
         p(0.1, Ui.T("Fermeture de Sablier…", "Closing Sablier…"));
         FermerAutres(exe);
@@ -1542,7 +1592,7 @@ class Setup
             Fin(avant == null ? Ui.T("Sablier est installé", "Sablier is installed") : Ui.T("Sablier est à jour", "Sablier is up to date"),
                 Ui.T("Dans ", "In ") + d + "\n" + Ui.T("Raccourcis : menu Démarrer", "Shortcuts: Start menu") + (bureau ? Ui.T(" et Bureau", " and Desktop") : "") + ".", true);
         }
-        catch (Exception ex) { Echec(Ui.T("L'installation n'a pas abouti", "Installation did not complete"), ex.Message); }
+        catch (Exception ex) { Journal.Erreur("installation", ex); Echec(Ui.T("L'installation n'a pas abouti", "Installation did not complete"), ex.Message); }
     }
 
     async void Desinstallation()
@@ -1558,7 +1608,7 @@ class Setup
             Fin(Ui.T("Sablier est désinstallé", "Sablier is uninstalled"),
                 Ui.T("Programmes, raccourcis et réglages d'alimentation ont été retirés.", "Schedules, shortcuts and power settings have been removed."), false);
         }
-        catch (Exception ex) { Echec(Ui.T("La désinstallation n'a pas abouti", "Uninstall did not complete"), ex.Message); }
+        catch (Exception ex) { Journal.Erreur("désinstallation", ex); Echec(Ui.T("La désinstallation n'a pas abouti", "Uninstall did not complete"), ex.Message); }
     }
 
     void Fin(string titre, string texte, bool lancer)
@@ -1644,6 +1694,7 @@ static class SelfTest
         }
         catch (Exception ex) { Ok(false, "bouton d'alimentation : " + ex.Message); }
         finally { Power.Synchroniser(); } // état réel de l'utilisateur
+        Ok(IO.File.Exists(Journal.Fichier) && IO.File.ReadAllText(Journal.Fichier).Contains("Démarrage de Sablier " + Setup.Version + " --selftest"), "journal créé avec la ligne de démarrage");
         return echecs;
     }
 
