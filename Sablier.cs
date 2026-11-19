@@ -285,10 +285,10 @@ static class Planif
         return r;
     }
 
-    public static Prog Minuterie(int minutes, string action)
+    public static Prog Minuterie(int minutes, string action, string nom = "Minuterie")
     {
         // calcul en UTC : une minuterie qui traverse le changement d'heure dure bien « minutes »
-        var p = new Prog { Nom = "Minuterie", Kind = "timer", Action = action, Heure = "", Debut = DateTime.Now, Cible = DateTime.UtcNow.AddMinutes(minutes).ToLocalTime() };
+        var p = new Prog { Nom = nom, Kind = "timer", Action = action, Heure = "", Debut = DateTime.Now, Cible = DateTime.UtcNow.AddMinutes(minutes).ToLocalTime() };
         Enregistrer(p);
         return p;
     }
@@ -681,10 +681,10 @@ class Fenetre
         F<ButtonBase>("ExtMoins").Click += delegate { Heure(h, m - 15); };
         F<ButtonBase>("ExtPlus").Click += delegate { Heure(h, m + 15); };
         F<Button>("BtnGo").Click += delegate { LancerExtinction(); };
-        F<Button>("BtnCancelTimer").Click += delegate { Essayer(() => Planif.Supprimer("Minuterie"), Ui.T("Minuterie annulée", "Timer cancelled")); };
+        F<Button>("BtnCancelTimer").Click += delegate { AnnulerMinuterie(); };
         F<Button>("BtnPlus15").Click += delegate
         {
-            Prog t = progs.Find(p => p.Nom == "Minuterie");
+            Prog t = Minuteur();
             if (t != null) Essayer(() => { t.Cible = t.Cible.AddMinutes(15); Planif.Enregistrer(t); }, Ui.T("Minuterie prolongée de 15 min", "Timer extended by 15 min"));
         };
         F<Button>("BtnEteindre").Click += delegate { EteindreMaintenant(); };
@@ -740,7 +740,7 @@ class Fenetre
         timer.Tick += delegate
         {
             if (++ticks % 40 == 0) Recharger(); else Tick();
-            if (!W.IsVisible && charge && Suivant(DateTime.Now) == null) Quitter(); // caché et plus rien de prévu
+            if (!W.IsVisible && charge && RienDePrevu()) Quitter(); // caché et plus rien de prévu
         };
         W.Loaded += delegate { Demarrer(); };
         W.Activated += delegate { Recharger(); };
@@ -757,13 +757,13 @@ class Fenetre
         var menu = new Forms.ContextMenuStrip();
         var ouvrir = new Forms.ToolStripMenuItem(Ui.T("Ouvrir Sablier", "Open Sablier"), null, delegate { Afficher(); });
         ouvrir.Font = new System.Drawing.Font(Forms.Control.DefaultFont, System.Drawing.FontStyle.Bold);
-        var annuler = new Forms.ToolStripMenuItem(Ui.T("Annuler la minuterie", "Cancel timer"), null, delegate { Essayer(() => Planif.Supprimer("Minuterie"), Ui.T("Minuterie annulée", "Timer cancelled")); });
+        var annuler = new Forms.ToolStripMenuItem(Ui.T("Annuler la minuterie", "Cancel timer"), null, delegate { AnnulerMinuterie(); });
         var quitterItem = new Forms.ToolStripMenuItem(Ui.T("Quitter", "Quit"), null, delegate { Quitter(); });
         menu.Items.Add(ouvrir);
         menu.Items.Add(annuler);
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add(quitterItem);
-        menu.Opening += (s, e) => { annuler.Visible = progs.Find(p => p.Nom == "Minuterie") != null; };
+        menu.Opening += (s, e) => { annuler.Visible = Minuteur() != null; };
         tray.ContextMenuStrip = menu;
 
         W.Closing += (s, e) => { if (!quitter) { e.Cancel = true; Ranger(); } }; // Alt+F4 = fermer dans la zone de notification
@@ -854,6 +854,23 @@ class Fenetre
         return next;
     }
 
+    // Plus rien à attendre. Un programme récurrent actif compte toujours : sa prochaine date n'est relue que toutes les 10 s,
+    // et à l'instant où il se déclenche elle est encore dans le passé (Sablier se quittait alors à tort)
+    bool RienDePrevu() { return Suivant(DateTime.Now) == null && !progs.Exists(p => p.Actif && p.Repeter); }
+
+    // La minuterie à l'écran : la prochaine à venir (« Minuterie », ou le « Report » d'une alerte)
+    Prog Minuteur()
+    {
+        Prog n = Suivant(DateTime.Now);
+        return n != null && n.Kind == "timer" ? n : progs.Find(p => p.Kind == "timer");
+    }
+
+    void AnnulerMinuterie()
+    {
+        Prog t = Minuteur();
+        if (t != null) Essayer(() => Planif.Supprimer(t.Nom), Ui.T("Minuterie annulée", "Timer cancelled"));
+    }
+
     // Affichage initial : au Loaded, ou tout de suite si Sablier démarre caché
     void Demarrer()
     {
@@ -874,7 +891,7 @@ class Fenetre
     // Fermer la fenêtre : Sablier reste dans la zone de notification si quelque chose est prévu
     void Ranger()
     {
-        if (Suivant(DateTime.Now) == null) { W.Dispatcher.BeginInvoke(new Action(Quitter)); return; } // différé : on est dans Closing
+        if (RienDePrevu()) { W.Dispatcher.BeginInvoke(new Action(Quitter)); return; } // différé : on est dans Closing
         W.Hide();
         tray.Visible = true;
         if (!bulleVue)
@@ -1156,7 +1173,12 @@ class Alerte
         ((Button)W.FindName("BtnAnnuler")).Click += delegate { Journal.Ecrire("Alerte annulée par l'utilisateur"); W.Close(); };
         ((Button)W.FindName("BtnReporter")).Click += delegate
         {
-            try { Planif.Minuterie(15, demande); W.Close(); } // « auto » sera réévalué dans 15 min
+            try
+            {
+                // une minuterie que l'utilisateur a lancée et qui court encore n'est pas écrasée : le report prend un autre nom
+                bool prise = Planif.Liste().Exists(p => p.Nom == "Minuterie" && p.Actif && p.Prochain > DateTime.Now);
+                Planif.Minuterie(15, demande, prise ? "Report" : "Minuterie"); W.Close(); // « auto » sera réévalué dans 15 min
+            }
             catch (Exception ex) { Journal.Erreur("report de 15 min", ex); info.Text = Ui.T("Report impossible : ", "Could not postpone: ") + ex.Message; }
         };
         ((Button)W.FindName("BtnMaintenant")).Click += delegate { Go(); };
@@ -1179,7 +1201,7 @@ class Alerte
 
 class Setup
 {
-    public const string Version = "1.6";
+    public const string Version = "1.7";
     const string CleDesinstall = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Sablier";
     const string CleRun = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string EteindreFr = "Éteindre le PC.lnk", EteindreEn = "Shut down PC.lnk";
